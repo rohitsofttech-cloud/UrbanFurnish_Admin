@@ -1,26 +1,296 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Brand Colors (Wooden Street / Urbn Furnish Theme) */
+    --color-primary: #e27429;
+    --color-primary-hover: #cb611b;
+    --color-primary-dark: #b85212;
+    --color-primary-light: #fbece1;
+    --color-primary-muted: #fef7f2;
+    
+    /* Secondary & Charcoal Accents */
+    --color-secondary: #282828;
+    --color-secondary-light: #484848;
+    --color-secondary-muted: #757575;
+    
+    /* State & Badge Colors */
+    --color-sale-red: #e53935;
+    --color-sale-badge: #d32f2f;
+    --color-sale-light: #ffebee;
+    --color-success: #2e7d32;
+    --color-success-light: #e8f5e9;
+    --color-warning: #ed6c02;
+    
+    /* Surface & Background Colors */
+    --background: #ffffff;
+    --foreground: #282828;
+    --surface-card: #ffffff;
+    --surface-muted: #f8f9fa;
+    --surface-elevated: #ffffff;
+    --surface-drawer: #ffffff;
+    
+    /* Borders & Dividers */
+    --border-light: #f0f0f0;
+    --border-subtle: #e5e7eb;
+    --border-dark: #d1d5db;
+
+    /* Header & Navbar Specific */
+    --topbar-bg: #ffffff;
+    --topbar-text: #666666;
+    --navbar-bg: #ffffff;
+    --navbar-border: #f0f0f0;
+    --category-bg: #ffffff;
+    --category-hover: #fbfbfb;
+
+    /* Shadows */
+    --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+    --shadow-card: 0 4px 14px 0 rgba(0, 0, 0, 0.07);
+    --shadow-dropdown: 0 10px 30px -5px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-drawer: -4px 0 25px rgba(0, 0, 0, 0.15);
+
+    /* Radii */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+
+    /* Component Bindings */
+    --primary: var(--color-primary);
+    --primary-hover: var(--color-primary-hover);
+    --primary-light: var(--color-primary-light);
+    --secondary: var(--color-secondary);
+    --bg-color: #f8f9fa;
+    --surface-color: #ffffff;
+    --text-color: #282828;
+    --text-muted: #757575;
+    --border-color: #e5e7eb;
+    --sidebar-bg: #ffffff;
+    --sidebar-text: #484848;
+    --sidebar-hover: #f8f9fa;
+    --sidebar-active: #fbece1;
+    --header-bg: #ffffff;
+  }
+
+  :root[data-theme='dark'] {
+    --color-primary: #e27429;
+    --color-primary-hover: #cb611b;
+    --color-primary-dark: #b85212;
+    --color-primary-light: rgba(226, 116, 41, 0.15);
+    --color-primary-muted: rgba(226, 116, 41, 0.08);
+
+    --primary: var(--color-primary);
+    --primary-hover: var(--color-primary-hover);
+    --primary-light: rgba(226, 116, 41, 0.15);
+    --secondary: #a3a3a3;
+    --bg-color: #121212;
+    --surface-color: #1e1e1e;
+    --text-color: #f5f5f5;
+    --text-muted: #a3a3a3;
+    --border-color: #2e2e2e;
+    --sidebar-bg: #181818;
+    --sidebar-text: #d4d4d4;
+    --sidebar-hover: #262626;
+    --sidebar-active: rgba(226, 116, 41, 0.2);
+    --header-bg: #181818;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme {
+  --color-primary: var(--color-primary);
+  --color-primary-hover: var(--color-primary-hover);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-primary-light: var(--color-primary-light);
+  --color-primary-muted: var(--color-primary-muted);
+
+  --color-secondary: var(--color-secondary);
+  --color-secondary-light: var(--color-secondary-light);
+  --color-secondary-muted: var(--color-secondary-muted);
+
+  --color-sale-red: var(--color-sale-red);
+  --color-sale-badge: var(--color-sale-badge);
+  --color-sale-light: var(--color-sale-light);
+  --color-success: var(--color-success);
+
+  --color-surface-card: var(--surface-card);
+  --color-surface-muted: var(--surface-muted);
+  --color-border-subtle: var(--border-subtle);
+
+  --color-bgColor: var(--bg-color);
+  --color-surfaceColor: var(--surface-color);
+  --color-textColor: var(--text-color);
+  --color-textMuted: var(--text-muted);
+  --color-borderColor: var(--border-color);
+  --color-sidebarBg: var(--sidebar-bg);
+  --color-sidebarText: var(--sidebar-text);
+  --color-sidebarHover: var(--sidebar-hover);
+  --color-sidebarActive: var(--sidebar-active);
+  --color-headerBg: var(--header-bg);
+
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
+
+/* Custom Scrollbar and Utilities */
+@layer utilities {
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .glassmorphism {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .card-shadow {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: var(--primary);
+  }
+}
+
+/* Smooth Scrolling & Base Typography */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: #ffffff;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Transitions */
+a, button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================================================
+   PRINT MEDIA STYLES - Clean PDF / Paper Bill & Label Formatting
+   ========================================================================== */
+@media print {
+  @page {
+    size: auto;
+    margin: 8mm;
+  }
+
+  /* Hide EVERYTHING on the page by default during print */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* When printing an order slip or tax invoice, hide the whole document body and only show the target */
+  body:has(#printable-order-slip-target) *,
+  body:has(#printable-invoice-target) * {
+    visibility: hidden;
+  }
+
+  /* Make the printable order slip target and its children visible */
+  #printable-order-slip-target,
+  #printable-order-slip-target * {
+    visibility: visible !important;
+  }
+
+  #printable-order-slip-target {
+    position: absolute !important;
+    left: 50% !important;
+    top: 20px !important;
+    transform: translateX(-50%) !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    width: 380px !important;
+    max-width: 100% !important;
+    display: block !important;
+    z-index: 99999 !important;
+  }
+
+  /* Make the printable tax invoice target and its children visible */
+  #printable-invoice-target,
+  #printable-invoice-target * {
+    visibility: visible !important;
+  }
+
+  #printable-invoice-target {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    z-index: 99999 !important;
+  }
+
+  /* Hide screen-only chrome, headers, navigation, buttons and modals */
+  header, nav, aside, footer,
+  .no-print,
+  .print-hidden,
+  button,
+  .custom-scrollbar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Reset layout constraints for printing */
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Ensure tables and cards don't split awkwardly across pages */
+  table, tr, td, th, .print-break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}
+
+
