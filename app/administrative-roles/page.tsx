@@ -186,28 +186,34 @@ function AdministrativeRolesContent() {
     setIsRoleModalOpen(true);
   };
 
-  // Toggle module permission action
-  const togglePermissionAction = (
-    moduleId: string,
-    action: 'view' | 'add' | 'edit' | 'delete'
-  ) => {
+  // Toggle entire module permission (checked gives full module access)
+  const toggleModulePermission = (moduleId: string) => {
     setRolePermissions((prev) =>
       prev.map((p) => {
         if (p.module !== moduleId) return p;
-
-        const updated = { ...p, [action]: !p[action] };
-        // If enabling add, edit, or delete, ensure view is also enabled
-        if ((action === 'add' || action === 'edit' || action === 'delete') && updated[action]) {
-          updated.view = true;
-        }
-        // If disabling view, disable all sub-actions
-        if (action === 'view' && !updated.view) {
-          updated.add = false;
-          updated.edit = false;
-          updated.delete = false;
-        }
-        return updated;
+        const nextState = !p.view;
+        return {
+          module: moduleId,
+          view: nextState,
+          add: nextState,
+          edit: nextState,
+          delete: nextState,
+        };
       })
+    );
+  };
+
+  // Toggle all permissions at once
+  const toggleSelectAllPermissions = () => {
+    const allSelected = rolePermissions.every((p) => p.view);
+    setRolePermissions((prev) =>
+      prev.map((p) => ({
+        module: p.module,
+        view: !allSelected,
+        add: !allSelected,
+        edit: !allSelected,
+        delete: !allSelected,
+      }))
     );
   };
 
@@ -647,340 +653,360 @@ function AdministrativeRolesContent() {
               </div>
             </div>
 
-            {/* Roles Grid (Matching Screenshot 2) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredRoles.map((r) => {
-                const visiblePermissionsCount = r.permissions.filter((p) => p.view).length;
-                return (
-                  <div
-                    key={r.id}
-                    className="bg-surfaceColor border border-borderColor rounded-2xl p-5 shadow-xs flex flex-col justify-between relative hover:border-primary/50 transition-all group"
-                  >
-                    <div>
-                      {/* Status dot & Shield icon */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-                          <Shield size={20} />
-                        </div>
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                      </div>
+            {/* Roles Table (Table structure instead of cards) */}
+            <div className="bg-surfaceColor border border-borderColor rounded-2xl shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-borderColor bg-bgColor/50 text-[11px] font-bold text-textMuted uppercase tracking-wider">
+                      <th className="py-3.5 px-4">Role Name</th>
+                      <th className="py-3.5 px-4">Description</th>
+                      <th className="py-3.5 px-4">Permissions / Modules</th>
+                      <th className="py-3.5 px-4">Status</th>
+                      <th className="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-borderColor/60">
+                    {filteredRoles.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-10 text-center text-textMuted">
+                          No roles found matching your search criteria.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredRoles.map((r) => {
+                        const visiblePermissions = r.permissions.filter((p) => p.view);
+                        const isSuperAdminRole = r.id === 'role_super_admin';
 
-                      {/* Title & Description */}
-                      <h3 className="text-base font-extrabold text-textColor tracking-tight uppercase">
-                        {r.name}
-                      </h3>
-                      <p className="text-xs text-textMuted font-medium mt-1 line-clamp-2 min-h-[32px]">
-                        {r.description}
-                      </p>
+                        return (
+                          <tr key={r.id} className="hover:bg-sidebarHover/50 transition-colors">
+                            {/* Role Name */}
+                            <td className="py-3.5 px-4 font-semibold text-textColor">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0">
+                                  <Shield size={17} />
+                                </div>
+                                <div>
+                                  <span className="font-bold text-sm text-textColor block uppercase tracking-tight">
+                                    {r.name}
+                                  </span>
+                                  {isSuperAdminRole && (
+                                    <span className="text-[10px] font-bold text-primary">System Default</span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
 
-                      {/* Permissions Pills */}
-                      <div className="mt-4 pt-3 border-t border-borderColor/60">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-textMuted/80 block mb-2">
-                          Permissions
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {r.permissions
-                            .filter((p) => p.view)
-                            .slice(0, 6)
-                            .map((p) => (
-                              <span
-                                key={p.module}
-                                className="px-2 py-0.5 rounded-md bg-bgColor border border-borderColor text-[10px] font-bold text-textColor uppercase tracking-wider"
-                              >
-                                {p.module}
+                            {/* Description */}
+                            <td className="py-3.5 px-4 text-textMuted max-w-xs">
+                              <p className="line-clamp-2 text-xs font-medium">{r.description || '-'}</p>
+                            </td>
+
+                            {/* Permissions Pills */}
+                            <td className="py-3.5 px-4 max-w-md">
+                              <div className="flex flex-wrap gap-1.5 items-center">
+                                {visiblePermissions.length === 0 ? (
+                                  <span className="text-textMuted text-xs italic">No permissions assigned</span>
+                                ) : (
+                                  <>
+                                    {visiblePermissions.slice(0, 4).map((p) => (
+                                      <span
+                                        key={p.module}
+                                        className="px-2 py-0.5 rounded-md bg-bgColor border border-borderColor text-[10px] font-bold text-textColor uppercase tracking-wider"
+                                      >
+                                        {p.module}
+                                      </span>
+                                    ))}
+                                    {visiblePermissions.length > 4 && (
+                                      <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-extrabold uppercase">
+                                        +{visiblePermissions.length - 4} more
+                                      </span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Status */}
+                            <td className="py-3.5 px-4">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                {r.status || 'active'}
                               </span>
-                            ))}
-                          {visiblePermissionsCount > 6 && (
-                            <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold uppercase">
-                              +{visiblePermissionsCount - 6} MORE
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                            </td>
 
-                    {/* Bottom Action buttons */}
-                    <div className="mt-6 pt-4 border-t border-borderColor/60 flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenRoleModal(r)}
-                        className="flex-1 py-2 rounded-xl border border-borderColor hover:bg-sidebarHover text-textColor font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        <Edit2 size={13} />
-                        <span>EDIT</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteRole(r.id, r.name)}
-                        className="flex-1 py-2 rounded-xl border border-borderColor hover:bg-danger/10 text-danger font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        <Trash2 size={13} />
-                        <span>DELETE</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                            {/* Actions */}
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenRoleModal(r)}
+                                  className="p-1.5 hover:bg-sidebarHover text-textMuted hover:text-textColor rounded-lg transition-colors cursor-pointer"
+                                  title="Edit Role"
+                                >
+                                  <Edit2 size={15} />
+                                </button>
+                                {!isSuperAdminRole && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteRole(r.id, r.name)}
+                                    className="p-1.5 hover:bg-danger/10 text-textMuted hover:text-danger rounded-lg transition-colors cursor-pointer"
+                                    title="Delete Role"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
 
-        {/* MODAL: CREATE / EDIT ROLE (Matching Screenshot 3) */}
+        {/* RIGHT-SIDE DRAWER: CREATE / EDIT ROLE */}
         <AnimatePresence>
           {isRoleModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+            <div className="fixed inset-0 z-50 overflow-hidden">
+              {/* Backdrop */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-surfaceColor border border-borderColor rounded-3xl max-w-4xl w-full shadow-2xl overflow-hidden my-8"
-              >
-                {/* Header */}
-                <div className="p-6 border-b border-borderColor flex items-center justify-between bg-bgColor/40">
-                  <div>
-                    <h3 className="text-xl font-extrabold text-textColor tracking-tight">
-                      {editingRole ? 'Edit Role' : 'Create New Role'}
-                    </h3>
-                    <p className="text-xs font-bold uppercase tracking-wider text-textMuted mt-0.5">
-                      Define a new administrative role
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsRoleModalOpen(false)}
-                    className="w-9 h-9 rounded-full border border-borderColor flex items-center justify-center text-textMuted hover:text-textColor hover:bg-sidebarHover transition-colors"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setIsRoleModalOpen(false)}
+                className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+              />
 
-                {/* Form Body */}
-                <form onSubmit={handleSaveRole} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
-                  {/* Inputs Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold uppercase tracking-wider text-textMuted">
-                        Role Name *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Super Admin"
-                        value={roleName}
-                        onChange={(e) => setRoleName(e.target.value)}
-                        className="w-full bg-bgColor border border-borderColor rounded-xl px-4 py-3 text-sm text-textColor focus:border-primary outline-hidden font-semibold"
-                        required
-                      />
+              <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+                <motion.div
+                  initial={{ x: '100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '100%' }}
+                  transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+                  className="w-screen max-w-xl bg-surfaceColor border-l border-borderColor shadow-2xl flex flex-col h-full"
+                >
+                  {/* Header */}
+                  <div className="p-6 border-b border-borderColor flex items-center justify-between bg-bgColor/40">
+                    <div>
+                      <h3 className="text-xl font-extrabold text-textColor tracking-tight">
+                        {editingRole ? 'Edit Role' : 'Create New Role'}
+                      </h3>
+                      <p className="text-xs font-bold uppercase tracking-wider text-textMuted mt-0.5">
+                        Define role details & module access
+                      </p>
                     </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold uppercase tracking-wider text-textMuted">
-                        Description *
-                      </label>
-                      <textarea
-                        rows={2}
-                        placeholder="Role summary..."
-                        value={roleDescription}
-                        onChange={(e) => setRoleDescription(e.target.value)}
-                        className="w-full bg-bgColor border border-borderColor rounded-xl px-4 py-2.5 text-sm text-textColor focus:border-primary outline-hidden font-medium"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Permissions Mapping Card Header */}
-                  <div className="bg-bgColor/50 border border-borderColor rounded-2xl p-4 flex items-center justify-between">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-textColor">
-                      Permissions Mapping
-                    </span>
-                    <span className="px-3 py-1 rounded-full border border-primary/40 bg-primary/10 text-primary text-xs font-extrabold uppercase tracking-wider">
-                      {selectedModulesCount} Modules Selected
-                    </span>
-                  </div>
-
-                  {/* Module Categories Permission Mapping */}
-                  <div className="space-y-6">
-                    {Array.from(new Set(ALL_MODULES.map((m) => m.category))).map(
-                      (catName) => {
-                        const modulesInCat = ALL_MODULES.filter((m) => m.category === catName);
-                        if (modulesInCat.length === 0) return null;
-
-                        return (
-                          <div key={catName} className="space-y-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold uppercase tracking-wider text-textMuted">
-                                {catName}
-                              </span>
-                              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-borderColor/60 text-textColor">
-                                {modulesInCat.length}
-                              </span>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {modulesInCat.map((mod) => {
-                                const currentPerm = rolePermissions.find((p) => p.module === mod.id) || {
-                                  module: mod.id,
-                                  view: false,
-                                  add: false,
-                                  edit: false,
-                                  delete: false,
-                                };
-
-                                const isChecked = currentPerm.view;
-
-                                return (
-                                  <div
-                                    key={mod.id}
-                                    className={`p-4 rounded-2xl border transition-all ${
-                                      isChecked
-                                        ? 'bg-primary/5 border-primary/30 shadow-xs'
-                                        : 'bg-bgColor/60 border-borderColor'
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div className="flex items-center gap-2.5">
-                                        <input
-                                          type="checkbox"
-                                          checked={isChecked}
-                                          onChange={() => togglePermissionAction(mod.id, 'view')}
-                                          className="w-4.5 h-4.5 rounded-md border-borderColor accent-primary cursor-pointer"
-                                        />
-                                        <div>
-                                          <h4 className="font-bold text-sm text-textColor">{mod.name}</h4>
-                                          <p className="text-[11px] text-textMuted">{mod.name} permissions</p>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* Action Toggles */}
-                                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                                      <button
-                                        type="button"
-                                        onClick={() => togglePermissionAction(mod.id, 'view')}
-                                        className={`px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase transition-all ${
-                                          currentPerm.view
-                                            ? 'bg-primary text-white shadow-xs'
-                                            : 'bg-surfaceColor border border-borderColor text-textMuted hover:text-textColor'
-                                        }`}
-                                      >
-                                        VIEW
-                                      </button>
-
-                                      {mod.hasActions && (
-                                        <>
-                                          <button
-                                            type="button"
-                                            onClick={() => togglePermissionAction(mod.id, 'add')}
-                                            className={`px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase transition-all ${
-                                              currentPerm.add
-                                                ? 'bg-primary text-white shadow-xs'
-                                                : 'bg-surfaceColor border border-borderColor text-textMuted hover:text-textColor'
-                                            }`}
-                                          >
-                                            ADD
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => togglePermissionAction(mod.id, 'edit')}
-                                            className={`px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase transition-all ${
-                                              currentPerm.edit
-                                                ? 'bg-primary text-white shadow-xs'
-                                                : 'bg-surfaceColor border border-borderColor text-textMuted hover:text-textColor'
-                                            }`}
-                                          >
-                                            EDIT
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() => togglePermissionAction(mod.id, 'delete')}
-                                            className={`px-3 py-1 rounded-lg text-[10px] font-extrabold uppercase transition-all ${
-                                              currentPerm.delete
-                                                ? 'bg-primary text-white shadow-xs'
-                                                : 'bg-surfaceColor border border-borderColor text-textMuted hover:text-textColor'
-                                            }`}
-                                          >
-                                            DEL
-                                          </button>
-                                        </>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      }
-                    )}
-                  </div>
-
-                  {/* Form Footer Buttons */}
-                  <div className="pt-6 border-t border-borderColor flex items-center justify-end gap-3">
                     <button
                       type="button"
                       onClick={() => setIsRoleModalOpen(false)}
-                      className="px-6 py-3 rounded-xl border border-borderColor text-textColor font-bold text-xs uppercase tracking-wider hover:bg-sidebarHover transition-colors cursor-pointer"
+                      className="w-9 h-9 rounded-full border border-borderColor flex items-center justify-center text-textMuted hover:text-textColor hover:bg-sidebarHover transition-colors"
                     >
-                      CANCEL
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-6 py-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary/30 transition-all cursor-pointer"
-                    >
-                      {editingRole ? 'UPDATE ROLE' : 'CREATE ROLE'}
+                      <X size={18} />
                     </button>
                   </div>
-                </form>
-              </motion.div>
+
+                  {/* Form Body */}
+                  <form onSubmit={handleSaveRole} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                    {/* Inputs */}
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold uppercase tracking-wider text-textMuted">
+                          Role Name *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Content Manager"
+                          value={roleName}
+                          onChange={(e) => setRoleName(e.target.value)}
+                          className="w-full bg-bgColor border border-borderColor rounded-xl px-4 py-3 text-sm text-textColor focus:border-primary outline-hidden font-semibold"
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold uppercase tracking-wider text-textMuted">
+                          Description *
+                        </label>
+                        <textarea
+                          rows={2}
+                          placeholder="Brief description of responsibilities..."
+                          value={roleDescription}
+                          onChange={(e) => setRoleDescription(e.target.value)}
+                          className="w-full bg-bgColor border border-borderColor rounded-xl px-4 py-2.5 text-sm text-textColor focus:border-primary outline-hidden font-medium"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Permissions Mapping Card Header */}
+                    <div className="bg-bgColor/50 border border-borderColor rounded-2xl p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-textColor">
+                          Module Permissions
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full border border-primary/40 bg-primary/10 text-primary text-[11px] font-extrabold">
+                          {selectedModulesCount}/{ALL_MODULES.length}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={toggleSelectAllPermissions}
+                        className="text-xs font-bold text-primary hover:underline"
+                      >
+                        {rolePermissions.every((p) => p.view) ? 'Deselect All' : 'Select All'}
+                      </button>
+                    </div>
+
+                    {/* Module Categories Permission Mapping (Checkboxes) */}
+                    <div className="space-y-6">
+                      {Array.from(new Set(ALL_MODULES.map((m) => m.category))).map(
+                        (catName) => {
+                          const modulesInCat = ALL_MODULES.filter((m) => m.category === catName);
+                          if (modulesInCat.length === 0) return null;
+
+                          return (
+                            <div key={catName} className="space-y-2.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-textMuted">
+                                  {catName}
+                                </span>
+                              </div>
+
+                              <div className="space-y-2">
+                                {modulesInCat.map((mod) => {
+                                  const currentPerm = rolePermissions.find((p) => p.module === mod.id);
+                                  const isChecked = Boolean(currentPerm?.view);
+
+                                  return (
+                                    <label
+                                      key={mod.id}
+                                      onClick={() => toggleModulePermission(mod.id)}
+                                      className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer select-none transition-all ${
+                                        isChecked
+                                          ? 'bg-primary/10 border-primary/40 shadow-xs'
+                                          : 'bg-bgColor/60 border-borderColor hover:bg-sidebarHover/50'
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <div
+                                          className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                                            isChecked
+                                              ? 'bg-primary border-primary text-white'
+                                              : 'border-borderColor bg-surfaceColor text-transparent'
+                                          }`}
+                                        >
+                                          <Check size={14} strokeWidth={3} />
+                                        </div>
+                                        <div>
+                                          <h4 className="font-bold text-xs text-textColor">{mod.name}</h4>
+                                          <p className="text-[11px] text-textMuted">Enable access to {mod.name}</p>
+                                        </div>
+                                      </div>
+
+                                      <span
+                                        className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md transition-colors ${
+                                          isChecked
+                                            ? 'bg-primary text-white'
+                                            : 'bg-borderColor/50 text-textMuted'
+                                        }`}
+                                      >
+                                        {isChecked ? 'Allowed' : 'Disabled'}
+                                      </span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        }
+                      )}
+                    </div>
+
+                    {/* Footer Buttons */}
+                    <div className="pt-4 border-t border-borderColor flex items-center justify-end gap-3 sticky bottom-0 bg-surfaceColor py-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsRoleModalOpen(false)}
+                        className="px-5 py-2.5 rounded-xl border border-borderColor text-textColor font-bold text-xs uppercase tracking-wider hover:bg-sidebarHover transition-colors cursor-pointer"
+                      >
+                        CANCEL
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary/30 transition-all cursor-pointer"
+                      >
+                        {editingRole ? 'UPDATE ROLE' : 'CREATE ROLE'}
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </div>
             </div>
           )}
         </AnimatePresence>
 
-        {/* MODAL: CREATE / EDIT ADMIN USER */}
+        {/* RIGHT-SIDE DRAWER: CREATE / EDIT ADMIN USER */}
         <AnimatePresence>
           {isUserModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <div className="fixed inset-0 z-50 overflow-hidden">
+              {/* Backdrop */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-surfaceColor border border-borderColor rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden"
-              >
-                {/* Header */}
-                <div className="p-6 border-b border-borderColor flex items-center justify-between bg-bgColor/40">
-                  <div>
-                    <h3 className="text-xl font-extrabold text-textColor tracking-tight">
-                      {editingUser ? 'Edit Admin User' : 'Add New Admin User'}
-                    </h3>
-                    <p className="text-xs font-bold uppercase tracking-wider text-textMuted mt-0.5">
-                      Assign administrative role & credentials
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsUserModalOpen(false)}
-                    className="w-9 h-9 rounded-full border border-borderColor flex items-center justify-center text-textMuted hover:text-textColor hover:bg-sidebarHover transition-colors"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setIsUserModalOpen(false)}
+                className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+              />
 
-                {/* Form Body */}
-                <form onSubmit={handleSaveUser} className="p-6 space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-textMuted">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. John Smith"
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
-                      className="w-full bg-bgColor border border-borderColor rounded-xl px-4 py-2.5 text-sm text-textColor focus:border-primary outline-hidden font-semibold"
-                      required
-                    />
+              <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+                <motion.div
+                  initial={{ x: '100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '100%' }}
+                  transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+                  className="w-screen max-w-md bg-surfaceColor border-l border-borderColor shadow-2xl flex flex-col h-full"
+                >
+                  {/* Header */}
+                  <div className="p-6 border-b border-borderColor flex items-center justify-between bg-bgColor/40">
+                    <div>
+                      <h3 className="text-xl font-extrabold text-textColor tracking-tight">
+                        {editingUser ? 'Edit Admin User' : 'Add New Admin User'}
+                      </h3>
+                      <p className="text-xs font-bold uppercase tracking-wider text-textMuted mt-0.5">
+                        Assign administrative role & credentials
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsUserModalOpen(false)}
+                      className="w-9 h-9 rounded-full border border-borderColor flex items-center justify-center text-textMuted hover:text-textColor hover:bg-sidebarHover transition-colors"
+                    >
+                      <X size={18} />
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Form Body */}
+                  <form onSubmit={handleSaveUser} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-textMuted">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. John Smith"
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        className="w-full bg-bgColor border border-borderColor rounded-xl px-4 py-2.5 text-sm text-textColor focus:border-primary outline-hidden font-semibold"
+                        required
+                      />
+                    </div>
+
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold uppercase tracking-wider text-textMuted">
                         Email Address *
@@ -1007,9 +1033,7 @@ function AdministrativeRolesContent() {
                         className="w-full bg-bgColor border border-borderColor rounded-xl px-4 py-2.5 text-sm text-textColor focus:border-primary outline-hidden font-medium"
                       />
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold uppercase tracking-wider text-textMuted">
                         Assign Role *
@@ -1043,9 +1067,7 @@ function AdministrativeRolesContent() {
                         <option value="EXECUTIVE">EXECUTIVE</option>
                       </select>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold uppercase tracking-wider text-textMuted">
                         Password
@@ -1072,26 +1094,26 @@ function AdministrativeRolesContent() {
                         <option value="inactive">Inactive</option>
                       </select>
                     </div>
-                  </div>
 
-                  {/* Footer Buttons */}
-                  <div className="pt-4 border-t border-borderColor flex items-center justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setIsUserModalOpen(false)}
-                      className="px-5 py-2.5 rounded-xl border border-borderColor text-textColor font-bold text-xs uppercase tracking-wider hover:bg-sidebarHover transition-colors cursor-pointer"
-                    >
-                      CANCEL
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary/30 transition-all cursor-pointer"
-                    >
-                      {editingUser ? 'SAVE USER' : 'ADD ADMIN'}
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
+                    {/* Footer Buttons */}
+                    <div className="pt-4 border-t border-borderColor flex items-center justify-end gap-3 sticky bottom-0 bg-surfaceColor py-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsUserModalOpen(false)}
+                        className="px-5 py-2.5 rounded-xl border border-borderColor text-textColor font-bold text-xs uppercase tracking-wider hover:bg-sidebarHover transition-colors cursor-pointer"
+                      >
+                        CANCEL
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-primary/30 transition-all cursor-pointer"
+                      >
+                        {editingUser ? 'SAVE USER' : 'ADD ADMIN'}
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </div>
             </div>
           )}
         </AnimatePresence>
