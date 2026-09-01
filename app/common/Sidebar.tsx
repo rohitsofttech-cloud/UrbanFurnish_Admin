@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard,
   Package,
@@ -83,8 +83,11 @@ const MENU_DATA: SidebarCategory[] = [
     category: 'Administrative Roles',
     permissionKey: 'AdminUsers',
     icon: <ShieldCheck size={19} />,
-    path: '/administrative-roles',
     badge: 'RBAC',
+    children: [
+      { name: 'Admin Users', path: '/administrative-roles?tab=users', icon: <Users size={15} />, permissionKey: 'AdminUsers' },
+      { name: 'Roles & Permissions', path: '/administrative-roles?tab=roles', icon: <ShieldCheck size={15} />, permissionKey: 'RolesPermissions' },
+    ],
   },
 ];
 
@@ -95,6 +98,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [openCategories, setOpenCategories] = useState<string[]>([]);
 
@@ -119,7 +123,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     filteredMenu.forEach((cat) => {
       if (cat.children) {
         const hasActiveChild = cat.children.some(
-          (child) => pathname === child.path || (child.path !== '/' && pathname.startsWith(child.path.split('?')[0]))
+          (child) => pathname === child.path.split('?')[0]
         );
         if (hasActiveChild) {
           setOpenCategories((prev) => (prev.includes(cat.category) ? prev : [...prev, cat.category]));
@@ -141,6 +145,19 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const cleanPath = path.split('?')[0];
     if (cleanPath === '/dashboard') return pathname === '/dashboard' || pathname === '/';
     return pathname.startsWith(cleanPath);
+  };
+
+  const isSubItemActive = (subPath: string) => {
+    if (subPath.includes('?')) {
+      const [path, query] = subPath.split('?');
+      if (pathname !== path) return false;
+      const params = new URLSearchParams(query);
+      for (const [key, value] of params.entries()) {
+        if (searchParams.get(key) !== value) return false;
+      }
+      return true;
+    }
+    return pathname === subPath;
   };
 
   return (
@@ -273,7 +290,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 {isCategoryOpen && visibleChildren && (
                   <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-primary/20 ml-4 my-1 animate-fadeIn">
                     {visibleChildren.map((subItem) => {
-                      const isSubActive = pathname === subItem.path.split('?')[0];
+                      const isSubActive = isSubItemActive(subItem.path);
                       return (
                         <Link
                           key={subItem.name}

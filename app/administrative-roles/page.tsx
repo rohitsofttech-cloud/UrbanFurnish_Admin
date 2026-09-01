@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import AdminLayout from '@/app/common/AdminLayout';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -30,11 +31,29 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function AdministrativeRolesPage() {
+function AdministrativeRolesContent() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  // Active Tab: 'users' | 'roles'
-  const [activeTab, setActiveTab] = useState<'users' | 'roles'>('users');
+  const tabQuery = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'users' | 'roles'>(
+    tabQuery === 'roles' ? 'roles' : 'users'
+  );
+
+  // Sync tab with URL search parameter
+  useEffect(() => {
+    if (tabQuery === 'roles') {
+      setActiveTab('roles');
+    } else if (tabQuery === 'users') {
+      setActiveTab('users');
+    }
+  }, [tabQuery]);
+
+  const handleTabChange = (tab: 'users' | 'roles') => {
+    setActiveTab(tab);
+    router.replace(`/administrative-roles?tab=${tab}`);
+  };
 
   // Roles state & Admin Users state
   const [roles, setRoles] = useState<Role[]>([]);
@@ -383,7 +402,7 @@ export default function AdministrativeRolesPage() {
         <div className="border-b border-borderColor flex items-center gap-8 overflow-x-auto">
           <button
             type="button"
-            onClick={() => setActiveTab('users')}
+            onClick={() => handleTabChange('users')}
             className={`pb-3 flex items-center gap-2 font-bold text-xs sm:text-sm uppercase tracking-wider transition-all relative ${
               activeTab === 'users'
                 ? 'text-primary border-b-2 border-primary'
@@ -399,7 +418,7 @@ export default function AdministrativeRolesPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab('roles')}
+            onClick={() => handleTabChange('roles')}
             className={`pb-3 flex items-center gap-2 font-bold text-xs sm:text-sm uppercase tracking-wider transition-all relative ${
               activeTab === 'roles'
                 ? 'text-primary border-b-2 border-primary'
@@ -1078,5 +1097,21 @@ export default function AdministrativeRolesPage() {
         </AnimatePresence>
       </div>
     </AdminLayout>
+  );
+}
+
+export default function AdministrativeRolesPage() {
+  return (
+    <Suspense
+      fallback={
+        <AdminLayout>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        </AdminLayout>
+      }
+    >
+      <AdministrativeRolesContent />
+    </Suspense>
   );
 }
