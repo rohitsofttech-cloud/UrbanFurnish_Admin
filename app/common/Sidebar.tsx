@@ -15,14 +15,17 @@ import {
   X,
   PlusCircle,
   Receipt,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { hasPermission } from '@/lib/auth';
 
 export interface SidebarSubItem {
   name: string;
   path: string;
   badge?: string;
   icon?: React.ReactNode;
+  permissionKey?: string;
 }
 
 export interface SidebarCategory {
@@ -30,42 +33,58 @@ export interface SidebarCategory {
   path?: string;
   icon: React.ReactNode;
   badge?: string;
+  permissionKey: string;
   children?: SidebarSubItem[];
 }
 
 const MENU_DATA: SidebarCategory[] = [
   {
     category: 'Dashboard',
+    permissionKey: 'Dashboard',
     icon: <LayoutDashboard size={19} />,
     path: '/dashboard',
   },
   {
     category: 'Products & Catalog',
+    permissionKey: 'Products',
     icon: <Package size={19} />,
     children: [
-      { name: 'All Products', path: '/products', icon: <Package size={15} /> },
-      { name: 'Add New Product', path: '/products?action=new', icon: <PlusCircle size={15} />, badge: 'Fast' },
-      { name: 'Categories (3-Tier)', path: '/categories', icon: <Tags size={15} /> },
+      { name: 'All Products', path: '/products', icon: <Package size={15} />, permissionKey: 'Products' },
+      { name: 'Categories (3-Tier)', path: '/categories', icon: <Tags size={15} />, permissionKey: 'Categories' },
     ],
   },
   {
-    category: 'Orders & Sales',
+    category: 'Orders',
+    permissionKey: 'Orders',
     icon: <ShoppingCart size={19} />,
+    path: '/orders',
     badge: '12 New',
-    children: [
-      { name: 'All Orders', path: '/orders', icon: <ShoppingCart size={15} /> },
-      { name: 'Billing & Invoices', path: '/billing', icon: <Receipt size={15} />, badge: 'GST' },
-    ],
+  },
+  {
+    category: 'Billing & Invoices',
+    permissionKey: 'Billing',
+    icon: <Receipt size={19} />,
+    path: '/billing',
+    badge: 'GST',
   },
   {
     category: 'Customer Directory',
+    permissionKey: 'Customers',
     icon: <Users size={19} />,
     path: '/customers',
   },
   {
     category: 'Analytics & Insights',
+    permissionKey: 'Analytics',
     icon: <BarChart3 size={19} />,
     path: '/analytics',
+  },
+  {
+    category: 'Administrative Roles',
+    permissionKey: 'AdminUsers',
+    icon: <ShieldCheck size={19} />,
+    path: '/administrative-roles',
+    badge: 'RBAC',
   },
 ];
 
@@ -79,8 +98,25 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const { user } = useAuth();
   const [openCategories, setOpenCategories] = useState<string[]>([]);
 
+  // Filter menu data dynamically based on user role permissions
+  const filteredMenu = MENU_DATA.filter((cat) => {
+    if (!user) return false;
+    if (user.roleName === 'Super Admin' || user.roleName === 'SUPER ADMIN') return true;
+
+    // Check main category permission
+    const hasCategoryAccess = hasPermission(user, cat.permissionKey, 'view');
+    if (hasCategoryAccess) return true;
+
+    // If category has children, check if any child has permission
+    if (cat.children && cat.children.length > 0) {
+      return cat.children.some((child) => hasPermission(user, child.permissionKey || cat.permissionKey, 'view'));
+    }
+
+    return false;
+  });
+
   useEffect(() => {
-    MENU_DATA.forEach((cat) => {
+    filteredMenu.forEach((cat) => {
       if (cat.children) {
         const hasActiveChild = cat.children.some(
           (child) => pathname === child.path || (child.path !== '/' && pathname.startsWith(child.path.split('?')[0]))
@@ -90,7 +126,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         }
       }
     });
-  }, [pathname]);
+  }, [pathname, user]);
 
   const toggleCategory = (categoryName: string) => {
     setOpenCategories((prev) =>
@@ -118,9 +154,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       )}
 
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-50 w-64 bg-sidebarBg border-r border-borderColor flex flex-col transition-all duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        className={`fixed top-0 left-0 bottom-0 z-50 w-64 bg-sidebarBg border-r border-borderColor flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
       >
         <div className="h-16 flex items-center justify-between px-5 border-b border-borderColor bg-sidebarBg">
           <Link href="/dashboard" className="flex items-center gap-3 group">
@@ -147,13 +182,13 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
         <div className="px-4 py-3 border-b border-borderColor/60 bg-bgColor/50">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs font-semibold text-textColor">
+            <div className="flex items-center gap-2 overflow-hidden pr-2">
+              <span className="w-2 h-2 shrink-0 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-semibold text-textColor truncate">
                 {user?.name || 'Super Admin'}
               </span>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary uppercase">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary uppercase shrink-0">
               {user?.roleName || 'Super Admin'}
             </span>
           </div>
@@ -164,8 +199,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             Store Management
           </div>
 
-          {MENU_DATA.map((item) => {
-            const hasChildren = Boolean(item.children && item.children.length > 0);
+          {filteredMenu.map((item) => {
+            // Filter children by permission if any
+            const visibleChildren = item.children?.filter((child) =>
+              user?.roleName === 'Super Admin' || user?.roleName === 'SUPER ADMIN'
+                ? true
+                : hasPermission(user, child.permissionKey || item.permissionKey, 'view')
+            );
+            const hasChildren = Boolean(visibleChildren && visibleChildren.length > 0);
             const isCategoryOpen = openCategories.includes(item.category);
             const isDirectActive = isActiveLink(item.path);
 
@@ -175,11 +216,10 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                   key={item.category}
                   href={item.path}
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    isDirectActive
-                      ? 'bg-primary text-white shadow-sm shadow-primary/30 font-semibold'
-                      : 'text-sidebarText hover:text-textColor hover:bg-sidebarHover'
-                  }`}
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isDirectActive
+                    ? 'bg-primary text-white shadow-sm shadow-primary/30 font-semibold'
+                    : 'text-sidebarText hover:text-textColor hover:bg-sidebarHover'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className={isDirectActive ? 'text-white' : 'text-textMuted'}>
@@ -189,11 +229,10 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                   </div>
                   {item.badge && (
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        isDirectActive
-                          ? 'bg-white/25 text-white'
-                          : 'bg-primary/15 text-primary'
-                      }`}
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDirectActive
+                        ? 'bg-white/25 text-white'
+                        : 'bg-primary/15 text-primary'
+                        }`}
                     >
                       {item.badge}
                     </span>
@@ -207,11 +246,10 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 <button
                   type="button"
                   onClick={() => toggleCategory(item.category)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    isCategoryOpen
-                      ? 'bg-sidebarHover/80 text-textColor font-semibold'
-                      : 'text-sidebarText hover:text-textColor hover:bg-sidebarHover'
-                  }`}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isCategoryOpen
+                    ? 'bg-sidebarHover/80 text-textColor font-semibold'
+                    : 'text-sidebarText hover:text-textColor hover:bg-sidebarHover'
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className={isCategoryOpen ? 'text-primary' : 'text-textMuted'}>
@@ -232,20 +270,19 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                   </div>
                 </button>
 
-                {isCategoryOpen && item.children && (
+                {isCategoryOpen && visibleChildren && (
                   <div className="pl-4 pr-1 py-1 space-y-1 border-l-2 border-primary/20 ml-4 my-1 animate-fadeIn">
-                    {item.children.map((subItem) => {
+                    {visibleChildren.map((subItem) => {
                       const isSubActive = pathname === subItem.path.split('?')[0];
                       return (
                         <Link
                           key={subItem.name}
                           href={subItem.path}
                           onClick={() => setIsOpen(false)}
-                          className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                            isSubActive
-                              ? 'bg-primary/15 text-primary font-semibold'
-                              : 'text-sidebarText hover:text-textColor hover:bg-sidebarHover'
-                          }`}
+                          className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${isSubActive
+                            ? 'bg-primary/15 text-primary font-semibold'
+                            : 'text-sidebarText hover:text-textColor hover:bg-sidebarHover'
+                            }`}
                         >
                           <div className="flex items-center gap-2.5">
                             <span className={isSubActive ? 'text-primary' : 'text-textMuted'}>
@@ -272,7 +309,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-bgColor border border-borderColor/60 text-[11px] text-textMuted">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              v2.4.0 • Production
+              v2.4.0 • RBAC
             </span>
             <span className="font-semibold text-textColor">Urbn Furnish</span>
           </div>
@@ -281,3 +318,4 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     </>
   );
 }
+

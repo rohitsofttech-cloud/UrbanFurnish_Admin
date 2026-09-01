@@ -94,6 +94,79 @@ export default function LoginPage() {
 
         {/* Form Container */}
         <div className="bg-surfaceColor/95 border border-borderColor rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
+          {/* Quick Role Tester Pills */}
+          <div className="mb-5 pb-4 border-b border-borderColor/60">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-textMuted flex items-center gap-1 mb-2">
+              <Sparkles size={12} className="text-primary" />
+              <span>Select Demo Account to Test RBAC:</span>
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('superadmin@gmail.com');
+                  setPassword('Super@123#');
+                }}
+                className={`p-2 rounded-xl border text-[11px] font-bold text-left transition-all cursor-pointer ${
+                  email === 'superadmin@gmail.com'
+                    ? 'bg-primary/15 border-primary text-primary'
+                    : 'bg-bgColor border-borderColor text-textColor hover:border-primary/50'
+                }`}
+              >
+                <div className="font-extrabold">Super Admin</div>
+                <div className="text-[9px] text-textMuted font-medium">All Modules + RBAC</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('john.smith@company.com');
+                  setPassword('Super@123#');
+                }}
+                className={`p-2 rounded-xl border text-[11px] font-bold text-left transition-all cursor-pointer ${
+                  email === 'john.smith@company.com'
+                    ? 'bg-primary/15 border-primary text-primary'
+                    : 'bg-bgColor border-borderColor text-textColor hover:border-primary/50'
+                }`}
+              >
+                <div className="font-extrabold">John Smith (Admin)</div>
+                <div className="text-[9px] text-textMuted font-medium">Store & Role Access</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('content@skypay.com');
+                  setPassword('Password@123');
+                }}
+                className={`p-2 rounded-xl border text-[11px] font-bold text-left transition-all cursor-pointer ${
+                  email === 'content@skypay.com'
+                    ? 'bg-primary/15 border-primary text-primary'
+                    : 'bg-bgColor border-borderColor text-textColor hover:border-primary/50'
+                }`}
+              >
+                <div className="font-extrabold">rohit (Content Mgr)</div>
+                <div className="text-[9px] text-textMuted font-medium">Products & Catalog</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('agents@skypay.com');
+                  setPassword('Password@123');
+                }}
+                className={`p-2 rounded-xl border text-[11px] font-bold text-left transition-all cursor-pointer ${
+                  email === 'agents@skypay.com'
+                    ? 'bg-primary/15 border-primary text-primary'
+                    : 'bg-bgColor border-borderColor text-textColor hover:border-primary/50'
+                }`}
+              >
+                <div className="font-extrabold">Tushar S (Agent)</div>
+                <div className="text-[9px] text-textMuted font-medium">Orders & Customers</div>
+              </button>
+            </div>
+          </div>
+
           <form onSubmit={handleLogin} className="space-y-5">
             <AnimatePresence>
               {error && (
@@ -208,9 +281,10 @@ export default function LoginPage() {
 
         {/* Footer info */}
         <p className="mt-6 text-center text-xs text-textMuted font-medium">
-          Urbn Furnish Admin Suite &bull; Secure API Gateway Ready
+          Urbn Furnish Admin Suite &bull; RBAC Module Enabled
         </p>
       </motion.div>
     </div>
   );
 }
+

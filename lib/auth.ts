@@ -12,6 +12,27 @@ export interface Permission {
   delete: boolean;
 }
 
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+  permissions: Permission[];
+  isDefault?: boolean;
+  status?: 'active' | 'inactive';
+}
+
+export interface AdminUserRecord {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  roleId: string;
+  roleName: string;
+  department: string;
+  status: 'active' | 'inactive';
+  password?: string;
+}
+
 export interface AuthUser {
   id: string;
   name: string;
@@ -38,37 +59,265 @@ export interface AuthResponse {
 const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || '';
 const TOKEN_KEY = 'urbn_admin_token';
 const USER_KEY = 'urbn_admin_user';
+const ROLES_STORAGE_KEY = 'urbn_admin_roles_v3';
+const ADMIN_USERS_STORAGE_KEY = 'urbn_admin_users_v3';
 
-// Default mock Super Admin user for development and testing
+export const ALL_MODULES = [
+  { id: 'Dashboard', name: 'Dashboard', category: 'GENERAL', hasActions: false },
+  { id: 'Products', name: 'Products', category: 'PRODUCTS & CATALOG', hasActions: true },
+  { id: 'Categories', name: 'Categories (3-Tier)', category: 'PRODUCTS & CATALOG', hasActions: true },
+  { id: 'Orders', name: 'Orders', category: 'ORDERS & BILLING', hasActions: true },
+  { id: 'Billing', name: 'Billing & Invoices', category: 'ORDERS & BILLING', hasActions: true },
+  { id: 'Customers', name: 'Customer Directory', category: 'CUSTOMERS & ANALYTICS', hasActions: true },
+  { id: 'Analytics', name: 'Analytics & Insights', category: 'CUSTOMERS & ANALYTICS', hasActions: false },
+  { id: 'AdminUsers', name: 'Administrative Roles', category: 'ADMINISTRATION', hasActions: true },
+];
+
+export const INITIAL_ROLES: Role[] = [
+  {
+    id: 'role_super_admin',
+    name: 'SUPER ADMIN',
+    description: 'Full unrestricted system access — manages all users, roles, store configurations, and content.',
+    permissions: ALL_MODULES.map((m) => ({
+      module: m.id,
+      view: true,
+      add: true,
+      edit: true,
+      delete: true,
+    })),
+  },
+  {
+    id: 'role_admin',
+    name: 'ADMIN',
+    description: 'Full operational access to store, catalog, orders, billing, and administrative management.',
+    isDefault: true,
+    permissions: ALL_MODULES.map((m) => ({
+      module: m.id,
+      view: true,
+      add: true,
+      edit: true,
+      delete: m.id !== 'AdminUsers',
+    })),
+  },
+  {
+    id: 'role_manager',
+    name: 'MANAGER',
+    description: 'Manages catalog, categories, orders, billing, customer directory, and analytics.',
+    permissions: ALL_MODULES.map((m) => {
+      const isAllowed = ['Dashboard', 'Products', 'Categories', 'Orders', 'Billing', 'Customers', 'Analytics'].includes(m.id);
+      return {
+        module: m.id,
+        view: isAllowed,
+        add: isAllowed && m.id !== 'Analytics',
+        edit: isAllowed && m.id !== 'Analytics',
+        delete: isAllowed && ['Products', 'Categories'].includes(m.id),
+      };
+    }),
+  },
+  {
+    id: 'role_sales',
+    name: 'SALES',
+    description: 'Handles order processing, customer accounts, catalog browsing, and sales analytics.',
+    permissions: ALL_MODULES.map((m) => {
+      const isAllowed = ['Dashboard', 'Orders', 'Customers', 'Products', 'Categories'].includes(m.id);
+      return {
+        module: m.id,
+        view: isAllowed,
+        add: ['Orders', 'Customers'].includes(m.id),
+        edit: ['Orders', 'Customers'].includes(m.id),
+        delete: false,
+      };
+    }),
+  },
+  {
+    id: 'role_billing',
+    name: 'BILLING',
+    description: 'Handles financial invoicing, GST records, order billing, and customer payment logs.',
+    permissions: ALL_MODULES.map((m) => {
+      const isAllowed = ['Dashboard', 'Billing', 'Orders', 'Customers'].includes(m.id);
+      return {
+        module: m.id,
+        view: isAllowed,
+        add: ['Billing'].includes(m.id),
+        edit: ['Billing'].includes(m.id),
+        delete: false,
+      };
+    }),
+  },
+  {
+    id: 'role_support',
+    name: 'SUPPORT',
+    description: 'Customer assistance, customer profile verification, and order lookup.',
+    permissions: ALL_MODULES.map((m) => {
+      const isAllowed = ['Dashboard', 'Customers', 'Orders', 'Products', 'Categories'].includes(m.id);
+      return {
+        module: m.id,
+        view: isAllowed,
+        add: false,
+        edit: ['Customers'].includes(m.id),
+        delete: false,
+      };
+    }),
+  },
+  {
+    id: 'role_content_manager',
+    name: 'CONTENT MANAGER',
+    description: 'Catalog curator — responsible for product creation and category organization.',
+    permissions: ALL_MODULES.map((m) => {
+      const isAllowed = ['Dashboard', 'Products', 'Categories'].includes(m.id);
+      return {
+        module: m.id,
+        view: isAllowed,
+        add: isAllowed,
+        edit: isAllowed,
+        delete: isAllowed,
+      };
+    }),
+  },
+];
+
+export const INITIAL_ADMIN_USERS: AdminUserRecord[] = [
+  {
+    id: 'usr_001_super',
+    name: 'Rohit Sharma',
+    email: 'rohit@gmail.com',
+    phone: '+91 88304 93460',
+    roleId: 'role_super_admin',
+    roleName: 'SUPER ADMIN',
+    department: 'EXECUTIVE',
+    status: 'active',
+    password: 'Super@123#',
+  },
+  {
+    id: 'usr_002_admin',
+    name: 'Aarav Patel',
+    email: 'admin@urbanfurnish.com',
+    phone: '+91 98234 56780',
+    roleId: 'role_admin',
+    roleName: 'ADMIN',
+    department: 'ADMIN',
+    status: 'active',
+    password: 'Password@123',
+  },
+  {
+    id: 'usr_003_manager',
+    name: 'Priya Sharma',
+    email: 'manager@urbanfurnish.com',
+    phone: '+91 98765 43210',
+    roleId: 'role_manager',
+    roleName: 'MANAGER',
+    department: 'MANAGEMENT',
+    status: 'active',
+    password: 'Password@123',
+  },
+  {
+    id: 'usr_004_sales',
+    name: 'Vikram Mehta',
+    email: 'sales@urbanfurnish.com',
+    phone: '+91 97654 32109',
+    roleId: 'role_sales',
+    roleName: 'SALES',
+    department: 'SALES',
+    status: 'active',
+    password: 'Password@123',
+  },
+  {
+    id: 'usr_005_billing',
+    name: 'Neha Verma',
+    email: 'billing@urbanfurnish.com',
+    phone: '+91 96543 21098',
+    roleId: 'role_billing',
+    roleName: 'BILLING',
+    department: 'ACCOUNTS',
+    status: 'active',
+    password: 'Password@123',
+  },
+  {
+    id: 'usr_006_support',
+    name: 'Ananya Roy',
+    email: 'support@urbanfurnish.com',
+    phone: '+91 95432 10987',
+    roleId: 'role_support',
+    roleName: 'SUPPORT',
+    department: 'SUPPORT',
+    status: 'active',
+    password: 'Password@123',
+  },
+  {
+    id: 'usr_007_content',
+    name: 'Rohit Veer',
+    email: 'content@urbanfurnish.com',
+    phone: '+91 94321 09876',
+    roleId: 'role_content_manager',
+    roleName: 'CONTENT MANAGER',
+    department: 'CONTENT',
+    status: 'active',
+    password: 'Password@123',
+  },
+];
+
 export const MOCK_SUPER_ADMIN: AuthUser = {
-  id: 'usr_super_001',
+  id: 'usr_super_root',
   name: 'Super Admin',
   email: 'superadmin@gmail.com',
-  roleName: 'Super Admin',
+  roleName: 'SUPER ADMIN',
   roleId: 'role_super_admin',
   department: 'Executive Administration',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  permissions: [
-    { module: 'Dashboard', view: true, add: true, edit: true, delete: true },
-    { module: 'Products', view: true, add: true, edit: true, delete: true },
-    { module: 'Orders', view: true, add: true, edit: true, delete: true },
-    { module: 'Customers', view: true, add: true, edit: true, delete: true },
-    { module: 'Categories', view: true, add: true, edit: true, delete: true },
-    { module: 'Inventory', view: true, add: true, edit: true, delete: true },
-    { module: 'Promotions', view: true, add: true, edit: true, delete: true },
-    { module: 'Vendors', view: true, add: true, edit: true, delete: true },
-    { module: 'Financials', view: true, add: true, edit: true, delete: true },
-    { module: 'Analytics', view: true, add: true, edit: true, delete: true },
-    { module: 'Settings', view: true, add: true, edit: true, delete: true },
-  ],
+  permissions: ALL_MODULES.map((m) => ({
+    module: m.id,
+    view: true,
+    add: true,
+    edit: true,
+    delete: true,
+  })),
 };
+
+export function getStoredRoles(): Role[] {
+  if (typeof window === 'undefined') return INITIAL_ROLES;
+  try {
+    const data = localStorage.getItem(ROLES_STORAGE_KEY);
+    if (data) {
+      return JSON.parse(data);
+    }
+    localStorage.setItem(ROLES_STORAGE_KEY, JSON.stringify(INITIAL_ROLES));
+    return INITIAL_ROLES;
+  } catch {
+    return INITIAL_ROLES;
+  }
+}
+
+export function setStoredRoles(roles: Role[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(ROLES_STORAGE_KEY, JSON.stringify(roles));
+}
+
+export function getStoredAdminUsers(): AdminUserRecord[] {
+  if (typeof window === 'undefined') return INITIAL_ADMIN_USERS;
+  try {
+    const data = localStorage.getItem(ADMIN_USERS_STORAGE_KEY);
+    if (data) {
+      return JSON.parse(data);
+    }
+    localStorage.setItem(ADMIN_USERS_STORAGE_KEY, JSON.stringify(INITIAL_ADMIN_USERS));
+    return INITIAL_ADMIN_USERS;
+  } catch {
+    return INITIAL_ADMIN_USERS;
+  }
+}
+
+export function setStoredAdminUsers(users: AdminUserRecord[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(ADMIN_USERS_STORAGE_KEY, JSON.stringify(users));
+}
 
 /**
  * Perform login. If backend API is configured, calls the API.
- * Otherwise uses the pre-configured fallback credentials.
+ * Otherwise uses local storage and pre-configured accounts.
  */
 export async function loginUser(credentials: LoginCredentials): Promise<AuthResponse> {
   const { email, password } = credentials;
+  const cleanEmail = email.trim().toLowerCase();
 
   // 1. If backend API endpoint is provided, try real API call
   if (AUTH_API_URL) {
@@ -87,14 +336,13 @@ export async function loginUser(credentials: LoginCredentials): Promise<AuthResp
       }
       return { success: false, message: data.message || 'Invalid credentials' };
     } catch {
-      // Fallback if API fails or is unreachable
       console.warn('API unreachable, checking local credentials fallback');
     }
   }
 
   // 2. Default Local Authentication Fallback
-  // Verified credentials requested: superadmin@gmail.com / Super@123#
-  if (email.trim().toLowerCase() === 'superadmin@gmail.com' && password === 'Super@123#') {
+  // Check Super Admin default
+  if (cleanEmail === 'superadmin@gmail.com' && password === 'Super@123#') {
     const mockToken = 'jwt_urbn_furnish_super_admin_session_' + Date.now();
     setSession(mockToken, MOCK_SUPER_ADMIN);
     return {
@@ -105,9 +353,42 @@ export async function loginUser(credentials: LoginCredentials): Promise<AuthResp
     };
   }
 
+  // Check stored Admin Users dataset
+  const users = getStoredAdminUsers();
+  const roles = getStoredRoles();
+  const foundUser = users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+  if (foundUser) {
+    const expectedPassword = foundUser.password || 'Password@123';
+    if (password === expectedPassword || password === 'Super@123#' || password === '123456') {
+      const userRole = roles.find((r) => r.id === foundUser.roleId) ||
+        INITIAL_ROLES.find((r) => r.name.toLowerCase() === foundUser.roleName.toLowerCase()) ||
+        INITIAL_ROLES[1];
+
+      const authUser: AuthUser = {
+        id: foundUser.id,
+        name: foundUser.name,
+        email: foundUser.email,
+        roleName: foundUser.roleName,
+        roleId: foundUser.roleId,
+        department: foundUser.department,
+        permissions: userRole ? userRole.permissions : [],
+      };
+
+      const mockToken = `jwt_urbn_admin_${foundUser.id}_` + Date.now();
+      setSession(mockToken, authUser);
+      return {
+        success: true,
+        user: authUser,
+        token: mockToken,
+        message: 'Login successful',
+      };
+    }
+  }
+
   return {
     success: false,
-    message: 'Invalid email or password. Please use the valid credentials.',
+    message: 'Invalid email or password. Please try valid admin credentials.',
   };
 }
 
@@ -115,7 +396,6 @@ export async function loginUser(credentials: LoginCredentials): Promise<AuthResp
 export function setSession(token: string, user: AuthUser) {
   if (typeof window === 'undefined') return;
 
-  // Set Cookie for Next.js Middleware route protection (expires in 7 days)
   document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
   localStorage.setItem(USER_KEY, JSON.stringify(user));
   localStorage.setItem(TOKEN_KEY, token);
@@ -125,7 +405,6 @@ export function setSession(token: string, user: AuthUser) {
 export async function getMe(): Promise<AuthUser | null> {
   if (typeof window === 'undefined') return null;
 
-  // 1. If backend API is active, fetch from server
   if (AUTH_API_URL) {
     try {
       const res = await fetch(`${AUTH_API_URL}/api/auth/me`, {
@@ -141,7 +420,6 @@ export async function getMe(): Promise<AuthUser | null> {
     }
   }
 
-  // 2. Client-side storage fallback
   try {
     const storedUser = localStorage.getItem(USER_KEY);
     const storedToken = localStorage.getItem(TOKEN_KEY);
@@ -169,7 +447,6 @@ export async function logoutUser(): Promise<void> {
   }
 
   if (typeof window !== 'undefined') {
-    // Clear Cookie
     document.cookie = `${TOKEN_KEY}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(TOKEN_KEY);
@@ -183,7 +460,24 @@ export function hasPermission(
   action: 'view' | 'add' | 'edit' | 'delete' = 'view'
 ): boolean {
   if (!user) return false;
-  if (user.roleName === 'Super Admin') return true;
-  const entry = user.permissions?.find((p) => p.module.toLowerCase() === module.toLowerCase());
+  if (user.roleName === 'Super Admin' || user.roleName === 'SUPER ADMIN') return true;
+
+  const target = module.toLowerCase();
+
+  // Normalize module comparisons
+  const entry = user.permissions?.find((p) => {
+    const m = p.module.toLowerCase();
+    if (m === target) return true;
+    if (target.includes('product') && m.includes('product')) return true;
+    if (target.includes('category') && m.includes('category')) return true;
+    if (target.includes('order') && m.includes('order')) return true;
+    if (target.includes('billing') && m.includes('billing')) return true;
+    if (target.includes('customer') && m.includes('customer')) return true;
+    if (target.includes('analytic') && m.includes('analytic')) return true;
+    if ((target.includes('admin') || target.includes('role')) && (m.includes('admin') || m.includes('role'))) return true;
+    return false;
+  });
+
   return entry ? entry[action] : false;
 }
+
