@@ -7,6 +7,11 @@ import { Toaster } from 'react-hot-toast';
 export const metadata: Metadata = {
   title: 'Urbn Furnish Admin | E-Commerce Control Center',
   description: 'Enterprise E-Commerce Admin Panel for Urbn Furnish',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({

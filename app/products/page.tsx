@@ -156,13 +156,7 @@ export default function ProductsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              href="/manufacturing"
-              className="px-4 py-2.5 rounded-xl bg-bgColor border border-borderColor text-textColor hover:bg-sidebarHover hover:border-primary/30 font-bold text-xs flex items-center gap-2 transition-all"
-            >
-              <Factory size={15} className="text-primary" />
-              <span>Manufacturing Specs</span>
-            </Link>
+
             <button
               onClick={() => setShowCsvUpload(true)}
               className="px-4 py-2.5 rounded-xl bg-bgColor border border-borderColor text-textColor hover:bg-sidebarHover hover:border-primary/30 font-bold text-xs flex items-center gap-2 transition-all"
@@ -242,9 +236,8 @@ export default function ProductsPage() {
                       setCategoryFilter('all');
                       setShowCategoryDropdown(false);
                     }}
-                    className={`w-full text-left px-3 py-2 text-xs hover:bg-sidebarHover transition-colors ${
-                      categoryFilter === 'all' ? 'font-bold text-primary bg-primary/5' : 'text-textColor'
-                    }`}
+                    className={`w-full text-left px-3 py-2 text-xs hover:bg-sidebarHover transition-colors ${categoryFilter === 'all' ? 'font-bold text-primary bg-primary/5' : 'text-textColor'
+                      }`}
                   >
                     All Categories
                   </button>
@@ -255,9 +248,8 @@ export default function ProductsPage() {
                         setCategoryFilter(cat.value);
                         setShowCategoryDropdown(false);
                       }}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-sidebarHover transition-colors ${
-                        categoryFilter === cat.value ? 'font-bold text-primary bg-primary/5' : 'text-textColor'
-                      }`}
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-sidebarHover transition-colors ${categoryFilter === cat.value ? 'font-bold text-primary bg-primary/5' : 'text-textColor'
+                        }`}
                     >
                       {cat.label}
                       <span className="text-textMuted ml-1">({cat.room})</span>
@@ -289,9 +281,8 @@ export default function ProductsPage() {
                         setSortBy(key);
                         setShowSortDropdown(false);
                       }}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-sidebarHover transition-colors ${
-                        sortBy === key ? 'font-bold text-primary bg-primary/5' : 'text-textColor'
-                      }`}
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-sidebarHover transition-colors ${sortBy === key ? 'font-bold text-primary bg-primary/5' : 'text-textColor'
+                        }`}
                     >
                       {sortLabels[key]}
                     </button>

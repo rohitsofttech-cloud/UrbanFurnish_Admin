@@ -6,6 +6,7 @@ import QRCode from 'qrcode';
 import { AdminOrder } from '@/lib/orderStore';
 import { Printer, Copy, Check, X, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PrintableDocumentButton from '@/app/common/PrintableDocument';
 
 interface OrderSlipModalProps {
   order: AdminOrder;
@@ -87,120 +88,6 @@ export default function OrderSlipModal({
     }
   };
 
-  const handlePrint = () => {
-    const itemRows = order.items.map(item => {
-      const pqr = productQrs[item.id]?.qr;
-      return `
-      <tr>
-        <td style="padding:6px 8px;border-right:1px solid #000;vertical-align:top;width:44px;text-align:center;">
-          <img src="${item.imageUrl}" alt="${item.name}" style="width:38px;height:38px;object-fit:cover;border:1px solid #ccc;border-radius:4px;display:block;margin:auto;" />
-        </td>
-        <td style="padding:4px 6px;border-right:1px solid #000;vertical-align:middle;text-align:center;width:55px;">
-          ${pqr ? `<img src="${pqr}" style="width:48px;height:48px;object-fit:contain;display:block;margin:0 auto;border:1px solid #000;padding:1px;" alt="QR" />` : ''}
-          <span style="font-family:monospace;font-size:8.5px;font-weight:900;color:#000;display:block;margin-top:2px;">${item.id}</span>
-        </td>
-        <td style="padding:6px 8px;border-right:1px solid #000;vertical-align:top;">
-          <span style="font-weight:700;font-size:11px;color:#000;display:block;">${item.name}</span>
-          ${item.variant ? `<span style="font-size:9.5px;color:#555;font-family:monospace;display:block;">[${item.variant}]</span>` : ''}
-          <span style="font-size:9px;color:#666;font-family:monospace;display:block;margin-top:2px;">SKU: ${item.sku}</span>
-        </td>
-        <td style="padding:6px 8px;text-align:center;font-weight:700;font-family:monospace;font-size:11px;color:#000;vertical-align:middle;">${item.quantity}</td>
-      </tr>`;
-    }).join('');
-
-    const left = window.screen.width / 2 - 960 / 2;
-    const top = window.screen.height / 2 - 750 / 2;
-    const printWindow = window.open('', '_blank', `width=960,height=750,left=${left},top=${top}`);
-    if (!printWindow) return;
-
-    printWindow.document.write(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <title>Order Slip – ${order.orderNumber || order.id}</title>
-  <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
-    body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:24px;}
-    table{width:100%;border-collapse:collapse;font-size:10.5px;}
-    thead tr{border-bottom:1px solid #000;background:#e5e5e5;}
-    th{padding:6px 8px;font-weight:900;text-align:left;font-size:10.5px;}
-    tbody tr{border-bottom:1px solid #ddd;}
-    @media print{body{display:block;padding:0;min-height:auto;}@page{margin:8mm;}}
-  </style>
-</head>
-<body>
-<div style="width:380px;background:#fff;color:#000;border:2px dashed #000;font-family:'Segoe UI',Arial,sans-serif;">
-
-  <div style="display:grid;grid-template-columns:7fr 5fr;border-bottom:1px solid #000;">
-    <div style="padding:10px 8px 10px 10px;border-right:1px solid #000;font-size:11.5px;line-height:1.4;display:flex;flex-direction:column;justify-content:space-between;">
-      <div>
-        <p style="font-weight:900;font-size:11.5px;text-transform:uppercase;margin-bottom:4px;">
-          DELIVERY ADDRESS:
-          <span style="font-weight:700;display:block;margin-top:2px;text-transform:none;">
-            ${order.shippingAddress.fullName || order.customer.name},
-          </span>
-        </p>
-        <p style="font-weight:400;font-size:11px;line-height:1.4;color:#111;">
-          ${order.shippingAddress.street}${order.shippingAddress.apartment ? `, ${order.shippingAddress.apartment}` : ''}${order.shippingAddress.landmark ? `, near ${order.shippingAddress.landmark}` : ''},
-        </p>
-        <p style="font-weight:700;margin-top:4px;">
-          ${order.shippingAddress.city} –
-          <span style="font-weight:900;font-size:12.5px;background:#fef9c3;padding:1px 4px;border:1px solid rgba(0,0,0,0.25);">
-            ${order.shippingAddress.pinCode}
-          </span>
-          , IN-${(order.shippingAddress.state || 'KA').slice(0, 2).toUpperCase()}
-        </p>
-      </div>
-      <div style="border-top:1px dashed #ccc;margin-top:8px;padding-top:8px;">
-        <p style="font-size:10.5px;font-family:monospace;font-weight:700;"><span style="font-family:'Segoe UI',Arial,sans-serif;font-weight:700;">Order ID:</span> ${order.orderNumber || order.id}</p>
-      </div>
-    </div>
-    <div style="padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;">
-      ${qrCodeUrl ? `<img src="${qrCodeUrl}" alt="QR" style="width:112px;height:112px;object-fit:contain;"/>` : '<div style="width:112px;height:112px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:10px;color:#888;">QR</div>'}
-      <span style="font-size:8.5px;font-family:monospace;text-align:center;font-weight:700;margin-top:4px;color:#444;">SCAN FOR BILL / URL</span>
-    </div>
-  </div>
-
-  <div style="padding:8px;font-size:10px;border-bottom:1px solid #000;line-height:1.5;background:#f9f9f9;">
-    <p><span style="font-weight:900;">Sold By:</span> Urbn Furnish Retail Pvt Ltd, Baner High Street, Pune, MH – 411045</p>
-    <p style="font-family:monospace;font-weight:700;color:#111;margin-top:2px;"><span style="font-family:'Segoe UI',Arial,sans-serif;font-weight:700;">GSTIN No:</span> 27AABCU1289P1ZM</p>
-  </div>
-
-  <div style="border-bottom:1px solid #000;">
-    <table>
-      <thead>
-        <tr>
-          <th style="border-right:1px solid #000;width:44px;text-align:center;">Img</th>
-          <th style="border-right:1px solid #000;text-align:center;width:75px;">Product ID</th>
-          <th style="border-right:1px solid #000;">Product</th>
-          <th style="text-align:center;width:52px;">Qty</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${itemRows}
-        <tr style="border-top:2px solid #000;background:#f0f0f0;">
-          <td colspan="3" style="padding:6px 8px;border-right:1px solid #000;font-weight:700;font-size:10.5px;">Total</td>
-          <td style="padding:6px 8px;text-align:center;font-weight:700;font-family:monospace;font-size:11px;">${totalQuantity}</td>
-        </tr>
-      </tbody>
-    </table>
-    <div style="display:flex;justify-content:flex-end;padding:6px 8px;background:#e5e5e5;border-top:1px solid #000;font-family:monospace;font-weight:900;font-size:11px;">
-      ${routingHub}
-    </div>
-  </div>
-
-  <div style="padding:8px 10px;display:flex;align-items:center;justify-content:flex-end;gap:8px;font-size:10px;color:#555;">
-    <span style="font-style:italic;">Ordered Through</span>
-    <img src="/logo.png" alt="URBN FURNISH" style="height:18px;width:auto;object-fit:contain;vertical-align:middle;display:inline-block;" />
-  </div>
-
-</div>
-<script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script>
-</body>
-</html>`);
-    printWindow.document.close();
-  };
-
   const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
   const cityCode = (order.shippingAddress.city || 'NSK').slice(0, 3).toUpperCase();
   const routingHub = `(N) BOM/${cityCode}`;
@@ -245,13 +132,14 @@ export default function OrderSlipModal({
                 <span>{copiedUrl ? 'Copied' : 'Copy URL'}</span>
               </button>
 
-              <button
-                onClick={handlePrint}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary text-white hover:bg-primary-hover font-bold shadow-xs transition-all"
-              >
-                <Printer size={13} />
-                <span>Print Slip</span>
-              </button>
+              <PrintableDocumentButton
+                type="order-slip"
+                order={order}
+                qrCodeUrl={qrCodeUrl}
+                productQrs={productQrs}
+                buttonText="Print Slip"
+                className="shadow-xs"
+              />
             </div>
           </div>
 
@@ -522,13 +410,14 @@ export default function OrderSlipModal({
             >
               Close
             </button>
-            <button
-              onClick={handlePrint}
-              className="px-5 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-hover shadow-xs transition-all flex items-center gap-1.5"
-            >
-              <Printer size={14} />
-              <span>Print Slip</span>
-            </button>
+            <PrintableDocumentButton
+              type="order-slip"
+              order={order}
+              qrCodeUrl={qrCodeUrl}
+              productQrs={productQrs}
+              buttonText="Print Slip"
+              className="shadow-xs"
+            />
           </div>
         </div>
       </div>

@@ -259,17 +259,6 @@ export default function OrdersPage() {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-surfaceColor border border-borderColor shadow-xs flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-xs text-textMuted font-medium">Total Order Volume</p>
-              <p className="text-xl sm:text-2xl font-black text-emerald-500 font-mono">
-                ₹{metrics.totalRev.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-              <CheckCircle2 size={20} />
-            </div>
-          </div>
         </div>
 
         {/* Tab Filters */}
@@ -386,7 +375,6 @@ export default function OrdersPage() {
                   <th className="px-5 py-3">Order Number</th>
                   <th className="px-5 py-3">Date & Time</th>
                   <th className="px-5 py-3">Customer</th>
-                  <th className="px-5 py-3">Payment</th>
                   <th className="px-5 py-3">Items Ordered</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3 text-right">Actions</th>
@@ -474,7 +462,6 @@ export default function OrdersPage() {
                               <p className="font-semibold text-xs text-textColor flex items-center gap-1">
                                 {order.customer.name}
                               </p>
-                              <p className="text-[11px] text-textMuted">{order.customer.email}</p>
                             </div>
                           </div>
                         </td>

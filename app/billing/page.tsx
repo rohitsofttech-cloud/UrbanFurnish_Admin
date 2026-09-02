@@ -37,6 +37,7 @@ import {
   saveStoredInvoices,
   SEED_INVOICES,
 } from '@/lib/billingStore';
+import PrintableDocumentButton from '../common/PrintableDocument';
 import toast from 'react-hot-toast';
 
 export default function BillingPage() {
@@ -241,190 +242,7 @@ export default function BillingPage() {
     toast.success(`Status updated to ${newStatus}`);
   };
 
-  // Print Invoice — popup that looks exactly like the on-screen invoice modal
-  const handlePrint = () => {
-    if (!selectedInvoice) return;
-    const inv = selectedInvoice;
 
-    const itemRows = inv.items.map((item, idx) => {
-      const taxableAmt = item.unitPrice * item.quantity * (1 - (item.discountPercentage || 0) / 100);
-      return `
-        <tr>
-          <td>${idx + 1}</td>
-          <td class="bold">${item.description}</td>
-          <td class="mono center">${item.hsnCode || '—'}</td>
-          <td class="center bold">${item.quantity}</td>
-          <td class="mono right">₹${item.unitPrice.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-          <td class="mono right">₹${taxableAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-          <td class="mono right">₹${item.taxAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-          <td class="mono right bold">₹${item.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-        </tr>`;
-    }).join('');
-
-    const left = window.screen.width / 2 - 960 / 2;
-    const top = window.screen.height / 2 - 750 / 2;
-    const printWindow = window.open('', '_blank', `width=960,height=750,left=${left},top=${top}`);
-    if (!printWindow) return;
-
-    printWindow.document.write(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Tax Invoice – ${inv.invoiceNumber}</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #111; background: #fff; padding: 28px 32px; display: flex; justify-content: center; align-items: flex-start; }
-    .wrap { max-width: 860px; width: 100%; margin: 0; }
-
-    /* ── Header ── */
-    .inv-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 16px; margin-bottom: 18px; }
-    .brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-    .brand-icon { width: 34px; height: 34px; object-fit: contain; }
-    .brand-name { font-size: 16px; font-weight: 900; letter-spacing: -0.2px; text-transform: uppercase; color: #e27429; }
-    .brand-meta { font-size: 11px; color: #444; line-height: 1.55; }
-    .inv-meta { text-align: right; }
-    .inv-meta .title { font-size: 22px; font-weight: 900; text-transform: uppercase; color: #e27429; letter-spacing: 1px; }
-    .inv-meta p { font-size: 11px; color: #333; margin-top: 4px; line-height: 1.65; }
-    .inv-meta strong { color: #000; }
-
-    /* ── Address grid ── */
-    .addr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border: 1px solid #ccc; border-radius: 6px; padding: 13px 16px; background: #f9f9f9; margin-bottom: 18px; font-size: 11px; }
-    .addr-label { font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; color: #555; display: block; margin-bottom: 5px; }
-    .addr-name { font-weight: 700; font-size: 13px; color: #000; margin-bottom: 3px; }
-    .addr-detail { color: #444; line-height: 1.55; }
-
-    /* ── Items table ── */
-    table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 11px; }
-    thead tr { background: #f0f0f0; border-top: 2px solid #000; border-bottom: 2px solid #000; }
-    th { padding: 8px 9px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 10px; color: #222; }
-    tbody tr { border-bottom: 1px solid #e0e0e0; page-break-inside: avoid; }
-    tbody tr:last-child { border-bottom: none; }
-    td { padding: 9px; vertical-align: top; }
-    .right { text-align: right; }
-    .center { text-align: center; }
-    .mono { font-family: 'Courier New', monospace; }
-    .bold { font-weight: 700; }
-
-    /* ── Footer: Notes + Totals ── */
-    .footer { display: flex; justify-content: space-between; gap: 24px; border-top: 1.5px solid #000; padding-top: 16px; margin-top: 4px; page-break-inside: avoid; }
-    .notes { max-width: 360px; }
-    .notes-label { font-weight: 700; text-transform: uppercase; font-size: 10px; color: #333; display: block; margin-bottom: 5px; }
-    .notes p { font-size: 10.5px; color: #555; line-height: 1.6; }
-    .notes em { font-style: italic; font-size: 10px; color: #777; display: block; margin-top: 5px; }
-    .totals { min-width: 250px; font-size: 11.5px; }
-    .t-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; color: #444; }
-    .t-row:last-of-type { border-bottom: none; }
-    .t-row .v { font-family: 'Courier New', monospace; font-weight: 600; color: #111; }
-    .t-grand { display: flex; justify-content: space-between; border-top: 2px solid #000; padding-top: 7px; margin-top: 6px; font-weight: 900; font-size: 13.5px; color: #000; }
-    .t-grand .v { font-family: 'Courier New', monospace; color: #e27429; }
-
-    /* ── Signature bar ── */
-    .sig-bar { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed #aaa; margin-top: 34px; padding-top: 12px; font-size: 10.5px; color: #555; }
-    .sig-right { text-align: right; }
-    .sig-line { border-top: 1px solid #555; margin-top: 22px; padding-top: 4px; font-size: 10px; color: #666; }
-
-    @media print { body { padding: 14px; } @page { margin: 10mm; size: A4; } }
-  </style>
-</head>
-<body>
-<div class="wrap">
-
-  <!-- Header -->
-  <div class="inv-header">
-    <div>
-      <div class="brand-row">
-        <img src="/logo.png" alt="Logo" class="brand-icon" />
-        <span class="brand-name">URBN FURNISH PVT LTD</span>
-      </div>
-      <div class="brand-meta">
-        Plot No. 42, Furniture Tech Park, Phase 2, Industrial Area,<br/>
-        Bangalore, Karnataka – 560066<br/>
-        <strong>GSTIN:</strong> ${inv.companyGst} &bull; <strong>PAN:</strong> ${inv.companyPan}<br/>
-        Email: billing@urbnfurnish.com &bull; Web: https://urbnfurnish.com
-      </div>
-    </div>
-    <div class="inv-meta">
-      <div class="title">TAX INVOICE</div>
-      <p><strong>Invoice No:</strong> ${inv.invoiceNumber}</p>
-      <p>Invoice Date: ${inv.date}</p>
-      <p>Due Date: ${inv.dueDate}</p>
-      <p>Payment Mode: <strong>${inv.paymentMethod}</strong></p>
-    </div>
-  </div>
-
-  <!-- Address -->
-  <div class="addr-grid">
-    <div>
-      <span class="addr-label">Billed To:</span>
-      <div class="addr-name">${inv.customerName}</div>
-      <div class="addr-detail">
-        ${inv.billingAddress}<br/>
-        Phone: ${inv.customerPhone} &bull; Email: ${inv.customerEmail}
-        ${inv.customerGst ? `<br/><strong>Buyer GSTIN:</strong> ${inv.customerGst}` : ''}
-      </div>
-    </div>
-    <div>
-      <span class="addr-label">Shipped / Delivered To:</span>
-      <div class="addr-name">${inv.customerName}</div>
-      <div class="addr-detail">
-        ${inv.shippingAddress}<br/>
-        State: Karnataka (Code: 29) &bull; Place of Supply: Inter-city Hub
-      </div>
-    </div>
-  </div>
-
-  <!-- Items Table -->
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Item Description</th>
-        <th class="center">HSN Code</th>
-        <th class="center">Qty</th>
-        <th class="right">Unit Price</th>
-        <th class="right">Taxable Amt</th>
-        <th class="right">GST (18%)</th>
-        <th class="right">Total</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${itemRows}
-    </tbody>
-  </table>
-
-  <!-- Footer: Notes + Totals -->
-  <div class="footer">
-    <div class="notes">
-      <span class="notes-label">Terms &amp; Notes:</span>
-      <p>${inv.notes}</p>
-      <em>This is a computer generated invoice and requires no physical signature under GST Rule 46.</em>
-    </div>
-    <div class="totals">
-      <div class="t-row"><span>Taxable Amount (Subtotal):</span><span class="v">₹${inv.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-      <div class="t-row"><span>CGST (9%):</span><span class="v">₹${inv.cgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-      <div class="t-row"><span>SGST (9%):</span><span class="v">₹${inv.sgst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-      ${inv.igst > 0 ? `<div class="t-row"><span>IGST (18%):</span><span class="v">₹${inv.igst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>` : ''}
-      <div class="t-grand"><span>Grand Total (INR):</span><span class="v">₹${inv.grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span></div>
-    </div>
-  </div>
-
-  <!-- Signature bar -->
-  <div class="sig-bar">
-    <div>
-      <p style="font-family:monospace;font-size:10px;color:#777;">Invoice Ref: ${inv.id} &bull; Order: ${inv.orderId}</p>
-    </div>
-    <div class="sig-right">
-      <p style="font-weight:700;color:#000;font-size:11px;">For URBN FURNISH PVT LTD</p>
-      <div class="sig-line">Authorized Signatory (Finance)</div>
-    </div>
-  </div>
-
-</div>
-<script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }<\/script>
-</body>
-</html>`);
-    printWindow.document.close();
-  };
 
   return (
     <AdminLayout>
@@ -953,13 +771,12 @@ export default function BillingPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={handlePrint}
-                    className="px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-hover text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-primary/30"
-                  >
-                    <Printer size={14} />
-                    <span>Print Invoice (PDF)</span>
-                  </button>
+                  <PrintableDocumentButton
+                    type="invoice"
+                    invoice={selectedInvoice}
+                    buttonText="Print Invoice (PDF)"
+                    className="shadow-sm shadow-primary/30"
+                  />
                   <button
                     onClick={() => setSelectedInvoice(null)}
                     className="p-2 rounded-xl text-textMuted hover:text-textColor hover:bg-bgColor"

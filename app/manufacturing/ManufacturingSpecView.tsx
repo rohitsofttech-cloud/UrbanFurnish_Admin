@@ -33,6 +33,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import { hasPermission } from '@/lib/auth';
+import PrintableDocumentButton from '@/app/common/PrintableDocument';
 
 interface ManufacturingSpecViewProps {
   initialProductId?: string;
@@ -138,157 +139,7 @@ export default function ManufacturingSpecView({
     setTimeout(() => setCopiedLink(false), 2500);
   };
 
-  // Printable Workshop Job Sheet (Completely free of any price or billing numbers)
-  const handlePrintJobSheet = () => {
-    if (!selectedProduct) return;
 
-    const p = selectedProduct;
-    const allImagesList = [p.imageUrl, p.secondaryImageUrl, ...(p.images || [])]
-      .filter(Boolean)
-      .slice(0, 4);
-
-    const imagesHtml = allImagesList
-      .map(
-        (img, idx) => `
-        <div style="border:1px solid #0f172a; border-radius:4px; overflow:hidden; background:#fff; text-align:center; padding:4px;">
-          <img src="${img}" style="width:100%; height:130px; object-fit:contain; display:block;" alt="Angle ${idx + 1}" />
-          <span style="font-size:9px; font-weight:700; color:#475569; display:block; margin-top:2px;">VIEW ${idx + 1}</span>
-        </div>`
-      )
-      .join('');
-
-    const featuresHtml = (p.features && p.features.length > 0 ? p.features : [
-      'High-grade structural alignment as per technical blueprint',
-      'Anti-termite and moisture-resistant kiln seasoned treatment',
-      'Reinforced internal joint brackets and load-bearing corners',
-      'Smooth sanded surface with uniform poly-coating finish'
-    ])
-      .map(
-        (f) => `
-        <li style="margin-bottom:6px; font-size:11px; line-height:1.4; color:#1e293b;">
-          <span style="display:inline-block; width:12px; height:12px; border:1.5px solid #0f172a; margin-right:6px; vertical-align:middle;"></span>
-          ${f}
-        </li>`
-      )
-      .join('');
-
-    const printWindow = window.open('', '_blank', 'width=980,height=800');
-    if (!printWindow) return;
-
-    printWindow.document.write(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <title>WORKSHOP PRODUCTION ORDER - ${p.id}</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #0f172a; padding: 20px; }
-    .sheet { max-width: 820px; margin: 0 auto; border: 2px solid #0f172a; padding: 16px; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 12px; }
-    .title { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase; }
-    .badge { background: #0f172a; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 4px; display: inline-block; }
-    .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 11.5px; }
-    .meta-table th { background: #f1f5f9; text-align: left; padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: 800; width: 22%; text-transform: uppercase; font-size: 10px; }
-    .meta-table td { padding: 6px 10px; border: 1px solid #cbd5e1; font-weight: 600; color: #0f172a; }
-    .section-title { font-size: 12px; font-weight: 900; text-transform: uppercase; background: #0f172a; color: #fff; padding: 4px 8px; margin: 12px 0 8px 0; letter-spacing: 0.5px; }
-    .gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
-    .qa-box { border: 1.5px dashed #64748b; padding: 10px; border-radius: 4px; background: #f8fafc; margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 10.5px; }
-    .sign-line { border-bottom: 1px solid #0f172a; height: 28px; margin-top: 6px; }
-    @media print {
-      body { padding: 0; }
-      .sheet { border: 2px solid #000; }
-      @page { margin: 8mm; size: A4 portrait; }
-    }
-  </style>
-</head>
-<body>
-  <div class="sheet">
-    <div class="header">
-      <div>
-        <span class="badge">FACTORY WORKSHOP JOB CARD</span>
-        <h1 class="title" style="margin-top:4px;">${p.name}</h1>
-        <p style="font-size:11.5px; color:#475569; font-weight:600; margin-top:2px;">
-          Product SKU / Model Code: <strong style="color:#0f172a; font-family:monospace; font-size:13px;">${p.id}</strong> | Room: ${p.room} | Category: ${p.category}
-        </p>
-      </div>
-      <div style="text-align:right;">
-        ${qrCodeUrl ? `<img src="${qrCodeUrl}" style="width:75px; height:75px; border:1px solid #0f172a; padding:2px;" alt="QR"/>` : ''}
-        <div style="font-size:9px; font-family:monospace; font-weight:700; margin-top:2px;">JOB ID: ${p.id}-MFG</div>
-      </div>
-    </div>
-
-    <!-- Visual Angle References -->
-    <div class="section-title">1. VISUAL REFERENCE & SHAPE PROFILE</div>
-    <div class="gallery-grid">
-      ${imagesHtml}
-    </div>
-
-    <!-- Technical Specifications Matrix -->
-    <div class="section-title">2. MANUFACTURING & MATERIAL SPECIFICATIONS</div>
-    <table class="meta-table">
-      <tr>
-        <th>Primary Material</th>
-        <td><strong>${p.material || 'Solid Hardwood'}</strong></td>
-        <th>Finish / Color</th>
-        <td><strong style="color:#b45309;">${p.finish || 'Natural Finish'}</strong></td>
-      </tr>
-      <tr>
-        <th>Physical Dimensions</th>
-        <td><strong style="font-family:monospace; font-size:12px;">${p.dimensions || 'Standard'}</strong></td>
-        <th>Seating / Config</th>
-        <td>${p.seatingCapacity || 'N/A'}</td>
-      </tr>
-      <tr>
-        <th>Storage Structure</th>
-        <td>${p.storageType || 'Without Storage'}</td>
-        <th>Warranty Standard</th>
-        <td>${p.warrantyYears ? `${p.warrantyYears} Years Structural` : '5 Years Standard'}</td>
-      </tr>
-      <tr>
-        <th>Batch Stock Target</th>
-        <td>${p.stock || 0} units active queue</td>
-        <th>Delivery Target</th>
-        <td>${p.deliveryDays || '3-5 Days'}</td>
-      </tr>
-    </table>
-
-    <!-- Build Steps Checklist -->
-    <div class="section-title">3. PRODUCTION QUALITY & STRUCTURAL CHECKPOINTS</div>
-    <ul style="list-style:none; padding:4px 8px;">
-      ${featuresHtml}
-      <li style="margin-bottom:6px; font-size:11px; line-height:1.4; color:#1e293b;">
-        <span style="display:inline-block; width:12px; height:12px; border:1.5px solid #0f172a; margin-right:6px; vertical-align:middle;"></span>
-        Final Quality Control stamp and dimensional tolerance inspection (±2mm max deviation)
-      </li>
-    </ul>
-
-    <!-- Sign off boxes -->
-    <div class="qa-box">
-      <div>
-        <strong>CARPENTRY / FRAME LEAD:</strong>
-        <div class="sign-line"></div>
-        <span style="font-size:9px; color:#64748b;">Signature & Date</span>
-      </div>
-      <div>
-        <strong>FINISH / UPHOLSTERY LEAD:</strong>
-        <div class="sign-line"></div>
-        <span style="font-size:9px; color:#64748b;">Signature & Date</span>
-      </div>
-      <div>
-        <strong>QC INSPECTION LEAD:</strong>
-        <div class="sign-line"></div>
-        <span style="font-size:9px; color:#64748b;">Passed [  ]  Rework [  ]</span>
-      </div>
-    </div>
-
-    <div style="margin-top:12px; text-align:center; font-size:9.5px; color:#64748b; border-top:1px solid #cbd5e1; padding-top:6px;">
-      URBN FURNISH MANUFACTURING DIVISION &bull; STRICTLY FOR PRODUCTION FLOOR USE &bull; CONFIDENTIAL
-    </div>
-  </div>
-</body>
-</html>`);
-    printWindow.document.close();
-  };
 
   // Filtered list for fast selector chips
   const filteredSearchList = searchQuery.trim()
@@ -439,14 +290,14 @@ export default function ManufacturingSpecView({
               <span>{copiedLink ? 'Link Copied' : 'Share Spec Link'}</span>
             </button>
 
-            <button
-              onClick={handlePrintJobSheet}
+            <PrintableDocumentButton
+              type="manufacturing"
+              product={selectedProduct}
+              qrCodeUrl={qrCodeUrl}
+              buttonText="Print Workshop Job Card"
               disabled={!selectedProduct}
-              className="px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-hover font-bold text-xs flex items-center gap-2 shadow-xs transition-all disabled:opacity-50 cursor-pointer"
-            >
-              <Printer size={15} />
-              <span>Print Workshop Job Card</span>
-            </button>
+              className="shadow-xs"
+            />
           </div>
         </div>
 
