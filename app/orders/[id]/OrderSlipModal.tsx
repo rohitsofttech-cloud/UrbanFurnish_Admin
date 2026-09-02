@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import QRCode from 'qrcode';
 import { AdminOrder } from '@/lib/orderStore';
-import { Printer, Copy, Check, X } from 'lucide-react';
+import { Printer, Copy, Check, X, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface OrderSlipModalProps {
@@ -19,7 +20,11 @@ export default function OrderSlipModal({
 }: OrderSlipModalProps) {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [orderSlipUrl, setOrderSlipUrl] = useState<string>('');
+  const [productQrs, setProductQrs] = useState<Record<string, { qr: string; url: string }>>({});
   const [copiedUrl, setCopiedUrl] = useState(false);
+
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
+  const [previewQr, setPreviewQr] = useState<{ id: string; name: string; qr: string; url: string } | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -44,8 +49,32 @@ export default function OrderSlipModal({
         .catch((err) => {
           console.error('Error generating QR code', err);
         });
+
+      // Generate per-product manufacturing spec QR codes
+      const qrs: Record<string, { qr: string; url: string }> = {};
+      const promises = order.items.map(async (item) => {
+        const specUrl = `${origin}/manufacturing/${encodeURIComponent(item.id)}`;
+        try {
+          const qrUri = await QRCode.toDataURL(specUrl, {
+            width: 200,
+            margin: 1,
+            color: {
+              dark: '#000000',
+              light: '#ffffff',
+            },
+            errorCorrectionLevel: 'M',
+          });
+          qrs[item.id] = { qr: qrUri, url: specUrl };
+        } catch (e) {
+          console.error(`Error generating QR for item ${item.id}:`, e);
+        }
+      });
+
+      Promise.all(promises).then(() => {
+        setProductQrs({ ...qrs });
+      });
     }
-  }, [order.id]);
+  }, [order.id, order.items]);
 
   if (!isOpen) return null;
 
@@ -59,15 +88,25 @@ export default function OrderSlipModal({
   };
 
   const handlePrint = () => {
-    const itemRows = order.items.map(item => `
+    const itemRows = order.items.map(item => {
+      const pqr = productQrs[item.id]?.qr;
+      return `
       <tr>
+        <td style="padding:6px 8px;border-right:1px solid #000;vertical-align:top;width:44px;text-align:center;">
+          <img src="${item.imageUrl}" alt="${item.name}" style="width:38px;height:38px;object-fit:cover;border:1px solid #ccc;border-radius:4px;display:block;margin:auto;" />
+        </td>
+        <td style="padding:4px 6px;border-right:1px solid #000;vertical-align:middle;text-align:center;width:55px;">
+          ${pqr ? `<img src="${pqr}" style="width:48px;height:48px;object-fit:contain;display:block;margin:0 auto;border:1px solid #000;padding:1px;" alt="QR" />` : ''}
+          <span style="font-family:monospace;font-size:8.5px;font-weight:900;color:#000;display:block;margin-top:2px;">${item.id}</span>
+        </td>
         <td style="padding:6px 8px;border-right:1px solid #000;vertical-align:top;">
           <span style="font-weight:700;font-size:11px;color:#000;display:block;">${item.name}</span>
           ${item.variant ? `<span style="font-size:9.5px;color:#555;font-family:monospace;display:block;">[${item.variant}]</span>` : ''}
-          <span style="font-size:9px;color:#666;font-family:monospace;display:block;">SKU: ${item.sku}</span>
+          <span style="font-size:9px;color:#666;font-family:monospace;display:block;margin-top:2px;">SKU: ${item.sku}</span>
         </td>
         <td style="padding:6px 8px;text-align:center;font-weight:700;font-family:monospace;font-size:11px;color:#000;vertical-align:middle;">${item.quantity}</td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
 
     const left = window.screen.width / 2 - 960 / 2;
     const top = window.screen.height / 2 - 750 / 2;
@@ -111,7 +150,6 @@ export default function OrderSlipModal({
           </span>
           , IN-${(order.shippingAddress.state || 'KA').slice(0, 2).toUpperCase()}
         </p>
-        <p style="font-size:11px;margin-top:4px;font-weight:600;">Ph: ${order.shippingAddress.phone || order.customer.phone}</p>
       </div>
       <div style="border-top:1px dashed #ccc;margin-top:8px;padding-top:8px;">
         <p style="font-size:10.5px;font-family:monospace;font-weight:700;"><span style="font-family:'Segoe UI',Arial,sans-serif;font-weight:700;">Order ID:</span> ${order.orderNumber || order.id}</p>
@@ -132,6 +170,8 @@ export default function OrderSlipModal({
     <table>
       <thead>
         <tr>
+          <th style="border-right:1px solid #000;width:44px;text-align:center;">Img</th>
+          <th style="border-right:1px solid #000;text-align:center;width:75px;">Product ID</th>
           <th style="border-right:1px solid #000;">Product</th>
           <th style="text-align:center;width:52px;">Qty</th>
         </tr>
@@ -139,7 +179,7 @@ export default function OrderSlipModal({
       <tbody>
         ${itemRows}
         <tr style="border-top:2px solid #000;background:#f0f0f0;">
-          <td style="padding:6px 8px;border-right:1px solid #000;font-weight:700;font-size:10.5px;">Total</td>
+          <td colspan="3" style="padding:6px 8px;border-right:1px solid #000;font-weight:700;font-size:10.5px;">Total</td>
           <td style="padding:6px 8px;text-align:center;font-weight:700;font-family:monospace;font-size:11px;">${totalQuantity}</td>
         </tr>
       </tbody>
@@ -238,9 +278,6 @@ export default function OrderSlipModal({
                       </span>
                       , IN-{order.shippingAddress.state?.slice(0, 2)?.toUpperCase() || 'MH'}
                     </p>
-                    <p className="text-[11px] text-gray-900 pt-1 font-semibold">
-                      Ph: {order.shippingAddress.phone || order.customer.phone}
-                    </p>
                   </div>
 
                   <div className="pt-2 mt-2 border-t border-dashed border-gray-300">
@@ -281,31 +318,85 @@ export default function OrderSlipModal({
                 <table className="w-full text-left text-[10.5px] border-collapse">
                   <thead>
                     <tr className="border-b border-black font-black bg-gray-200/90 text-black">
-                      <th className="p-1.5 border-r border-black">Product</th>
-                      <th className="p-1.5 text-center w-14">Qty</th>
+                      <th className="p-1.5 border-r border-black w-10 text-center">Img</th>
+                      <th className="p-1.5 border-r border-black text-center w-14">Spec QR</th>
+                      <th className="p-1.5 border-r border-black">Product &amp; SKU</th>
+                      <th className="p-1.5 text-center w-12">Qty</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-300">
-                    {order.items.map((item) => (
-                      <tr key={item.id}>
-                        <td className="p-1.5 border-r border-black leading-snug">
-                          <span className="font-bold text-black block">{item.name}</span>
-                          {item.variant && (
-                            <span className="text-[9.5px] text-gray-700 block font-mono">
-                              [{item.variant}]
+                    {order.items.map((item) => {
+                      const pqr = productQrs[item.id];
+                      return (
+                        <tr key={item.id}>
+                          <td className="p-1.5 border-r border-black align-middle text-center">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImage({ url: item.imageUrl, name: item.name })}
+                              className="group relative block w-8 h-8 mx-auto rounded overflow-hidden border border-gray-300 hover:border-black transition-all cursor-pointer"
+                              title="Click to view large preview"
+                            >
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                              />
+                            </button>
+                          </td>
+                          <td className="p-1 border-r border-black align-middle text-center">
+                            {pqr?.qr ? (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewQr({ id: item.id, name: item.name, qr: pqr.qr, url: pqr.url })}
+                                className="group inline-flex flex-col items-center justify-center p-0.5 rounded hover:bg-yellow-50 border border-transparent hover:border-black/30 transition-all cursor-pointer"
+                                title="Click to enlarge Manufacturing Spec QR Code"
+                              >
+                                <img
+                                  src={pqr.qr}
+                                  alt={`Spec QR for ${item.id}`}
+                                  className="w-8 h-8 object-contain border border-black/80 rounded-xs bg-white"
+                                />
+                                <span className="font-mono text-[8px] font-black text-black group-hover:text-amber-700 block leading-tight">
+                                  {item.id}
+                                </span>
+                              </button>
+                            ) : (
+                              <Link
+                                href={`/manufacturing/${encodeURIComponent(item.id)}`}
+                                target="_blank"
+                                className="font-mono font-bold text-[9.5px] text-black hover:text-amber-700 underline"
+                              >
+                                {item.id}
+                              </Link>
+                            )}
+                          </td>
+                          <td className="p-1.5 border-r border-black leading-snug">
+                            <Link
+                              href={`/manufacturing/${encodeURIComponent(item.id)}`}
+                              target="_blank"
+                              className="font-bold text-black hover:text-amber-800 block text-[10.5px] group"
+                              title="Open Manufacturing Spec in new tab"
+                            >
+                              <span>{item.name}</span>
+                              <ExternalLink size={10} className="inline ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Link>
+                            {item.variant && (
+                              <span className="text-[9px] text-gray-700 block font-mono">
+                                [{item.variant}]
+                              </span>
+                            )}
+                            <span className="text-[8.5px] text-gray-600 font-mono block mt-0.5">
+                              SKU: {item.sku}
                             </span>
-                          )}
-                          <span className="text-[9px] text-gray-600 font-mono block">
-                            SKU: {item.sku}
-                          </span>
-                        </td>
-                        <td className="p-1.5 text-center font-bold text-black align-middle font-mono text-xs">
-                          {item.quantity}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="p-1.5 text-center font-bold text-black align-middle font-mono text-xs">
+                            {item.quantity}
+                          </td>
+                        </tr>
+                      );
+                    })}
                     <tr className="border-t-2 border-black font-black bg-gray-100">
-                      <td className="p-1.5 border-r border-black font-bold text-black">Total</td>
+                      <td colSpan={3} className="p-1.5 border-r border-black font-bold text-black">Total</td>
                       <td className="p-1.5 text-center font-mono font-bold text-black">{totalQuantity}</td>
                     </tr>
                   </tbody>
@@ -328,9 +419,101 @@ export default function OrderSlipModal({
           </div>
         </div>
 
+        {/* Product Image Popup Modal */}
+        {previewImage && (
+          <div
+            className="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+            onClick={() => setPreviewImage(null)}
+          >
+            <div
+              className="relative max-w-2xl w-full bg-surfaceColor border border-borderColor rounded-2xl overflow-hidden shadow-2xl p-4 space-y-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-textColor truncate max-w-[85%]">{previewImage.name}</h4>
+                <button
+                  type="button"
+                  onClick={() => setPreviewImage(null)}
+                  className="p-1.5 rounded-lg bg-bgColor text-textMuted hover:text-textColor hover:bg-sidebarHover transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="w-full h-[60vh] max-h-[500px] rounded-xl overflow-hidden bg-black/20 flex items-center justify-center border border-borderColor">
+                <img
+                  src={previewImage.url}
+                  alt={previewImage.name}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Product Spec QR Popup Modal */}
+        {previewQr && (
+          <div
+            className="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+            onClick={() => setPreviewQr(null)}
+          >
+            <div
+              className="relative max-w-sm w-full bg-surfaceColor border border-borderColor rounded-2xl overflow-hidden shadow-2xl p-6 text-center space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setPreviewQr(null)}
+                className="absolute top-3 right-3 p-1.5 rounded-lg bg-bgColor text-textMuted hover:text-textColor hover:bg-sidebarHover transition-colors"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-primary/10 text-primary font-mono inline-block">
+                  SPEC ID: {previewQr.id}
+                </span>
+                <h3 className="text-base font-bold text-textColor">{previewQr.name}</h3>
+                <p className="text-xs text-textMuted">
+                  Scan this QR code with a workshop tablet to view live technical manufacturing specs.
+                </p>
+              </div>
+
+              <div className="p-3 bg-white rounded-xl border-2 border-black inline-block shadow-md">
+                <img
+                  src={previewQr.qr}
+                  alt={`QR for ${previewQr.id}`}
+                  className="w-48 h-48 object-contain mx-auto"
+                />
+              </div>
+
+              <div className="pt-1 flex flex-col gap-2">
+                <Link
+                  href={previewQr.url}
+                  target="_blank"
+                  className="w-full py-2.5 px-4 rounded-xl bg-primary text-white font-bold text-xs hover:bg-primary-hover transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <ExternalLink size={14} />
+                  <span>Open Spec Sheet Directly</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(previewQr.url);
+                    toast.success(`Copied spec link for ${previewQr.id}`);
+                  }}
+                  className="w-full py-2 px-4 rounded-xl bg-bgColor border border-borderColor text-textColor font-bold text-xs hover:bg-sidebarHover transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Copy size={13} />
+                  <span>Copy Direct Spec URL</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between px-6 py-4 border-t border-borderColor shrink-0 bg-bgColor/30 print:hidden">
           <p className="text-[11px] text-textMuted">
-            Clean delivery slip format with active scannable URL QR code.
+            Includes per-product scannable manufacturing spec QR codes.
           </p>
           <div className="flex gap-2">
             <button
@@ -411,31 +594,57 @@ export default function OrderSlipModal({
           <table className="w-full text-left text-[10.5px] border-collapse">
             <thead>
               <tr className="border-b border-black font-black bg-gray-200 text-black">
+                <th className="p-1.5 border-r border-black w-10 text-center">Img</th>
+                <th className="p-1.5 border-r border-black text-center w-14">Spec QR</th>
                 <th className="p-1.5 border-r border-black">Product</th>
-                <th className="p-1.5 text-center w-14">Qty</th>
+                <th className="p-1.5 text-center w-12">Qty</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-300">
-              {order.items.map((item) => (
-                <tr key={item.id}>
-                  <td className="p-1.5 border-r border-black leading-snug">
-                    <span className="font-bold text-black block">{item.name}</span>
-                    {item.variant && (
-                      <span className="text-[9.5px] text-gray-700 block font-mono">
-                        [{item.variant}]
+              {order.items.map((item) => {
+                const pqr = productQrs[item.id];
+                return (
+                  <tr key={item.id}>
+                    <td className="p-1.5 border-r border-black align-middle text-center">
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-8 h-8 object-cover mx-auto rounded border border-gray-300"
+                      />
+                    </td>
+                    <td className="p-1 border-r border-black align-middle text-center">
+                      {pqr?.qr ? (
+                        <div className="flex flex-col items-center">
+                          <img
+                            src={pqr.qr}
+                            alt="QR"
+                            className="w-8 h-8 object-contain border border-black rounded-xs"
+                          />
+                          <span className="font-mono text-[7.5px] font-black">{item.id}</span>
+                        </div>
+                      ) : (
+                        <span className="font-mono text-[9px] font-bold">{item.id}</span>
+                      )}
+                    </td>
+                    <td className="p-1.5 border-r border-black leading-snug">
+                      <span className="font-bold text-black block">{item.name}</span>
+                      {item.variant && (
+                        <span className="text-[9.5px] text-gray-700 block font-mono">
+                          [{item.variant}]
+                        </span>
+                      )}
+                      <span className="text-[9px] text-gray-600 font-mono block mt-0.5">
+                        SKU: {item.sku}
                       </span>
-                    )}
-                    <span className="text-[9px] text-gray-600 font-mono block">
-                      SKU: {item.sku}
-                    </span>
-                  </td>
-                  <td className="p-1.5 text-center font-bold text-black align-middle font-mono text-xs">
-                    {item.quantity}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="p-1.5 text-center font-bold text-black align-middle font-mono text-xs">
+                      {item.quantity}
+                    </td>
+                  </tr>
+                );
+              })}
               <tr className="border-t-2 border-black font-black bg-gray-100">
-                <td className="p-1.5 border-r border-black font-bold text-black">Total</td>
+                <td colSpan={3} className="p-1.5 border-r border-black font-bold text-black">Total</td>
                 <td className="p-1.5 text-center font-mono font-bold text-black">{totalQuantity}</td>
               </tr>
             </tbody>

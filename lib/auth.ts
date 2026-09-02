@@ -59,18 +59,62 @@ export interface AuthResponse {
 const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || '';
 const TOKEN_KEY = 'urbn_admin_token';
 const USER_KEY = 'urbn_admin_user';
-const ROLES_STORAGE_KEY = 'urbn_admin_roles_v3';
-const ADMIN_USERS_STORAGE_KEY = 'urbn_admin_users_v3';
+const ROLES_STORAGE_KEY = 'urbn_admin_roles_v4';
+const ADMIN_USERS_STORAGE_KEY = 'urbn_admin_users_v4';
 
-export const ALL_MODULES = [
+export interface ModuleDefinition {
+  id: string;
+  name: string;
+  category: string;
+  hasActions: boolean;
+  parentModule?: string;
+  children?: string[];
+}
+
+export const ALL_MODULES: ModuleDefinition[] = [
   { id: 'Dashboard', name: 'Dashboard', category: 'GENERAL', hasActions: false },
-  { id: 'Products', name: 'Products', category: 'PRODUCTS & CATALOG', hasActions: true },
-  { id: 'Categories', name: 'Categories (3-Tier)', category: 'PRODUCTS & CATALOG', hasActions: true },
+  { id: 'AdminUsers', name: 'Users Creation', category: 'ADMINISTRATION', hasActions: true, parentModule: 'AdministrativeRoles', children: undefined },
+  { id: 'RolesPermissions', name: 'Roles & Permissions', category: 'ADMINISTRATION', hasActions: true, parentModule: 'AdministrativeRoles', children: undefined },
+  { id: 'Products', name: 'All Products', category: 'PRODUCTS & CATALOG', hasActions: true, parentModule: 'ProductsCatalog', children: undefined },
+  { id: 'Categories', name: 'Categories (3-Tier)', category: 'PRODUCTS & CATALOG', hasActions: true, parentModule: 'ProductsCatalog', children: undefined },
+  { id: 'Manufacturing', name: 'Manufacturing Specs', category: 'MANUFACTURING', hasActions: false },
   { id: 'Orders', name: 'Orders', category: 'ORDERS & BILLING', hasActions: true },
   { id: 'Billing', name: 'Billing & Invoices', category: 'ORDERS & BILLING', hasActions: true },
-  { id: 'Customers', name: 'Customer Directory', category: 'CUSTOMERS & ANALYTICS', hasActions: true },
-  { id: 'Analytics', name: 'Analytics & Insights', category: 'CUSTOMERS & ANALYTICS', hasActions: false },
-  { id: 'AdminUsers', name: 'Administrative Roles', category: 'ADMINISTRATION', hasActions: true },
+  { id: 'Financials', name: 'Financials & Payments', category: 'FINANCIALS', hasActions: true },
+  { id: 'Customers', name: 'Customer Directory', category: 'CUSTOMERS', hasActions: true },
+  { id: 'Analytics', name: 'Analytics & Insights', category: 'ANALYTICS', hasActions: false },
+];
+
+// Sidebar-mirrored module hierarchy for permission UI display
+export interface SidebarModuleGroup {
+  id: string;
+  name: string;
+  icon: string;
+  children?: { id: string; name: string }[];
+}
+
+export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
+  { id: 'Dashboard', name: 'Dashboard', icon: 'LayoutDashboard' },
+  {
+    id: 'AdministrativeRoles', name: 'Administrative Roles', icon: 'ShieldCheck',
+    children: [
+      { id: 'AdminUsers', name: 'Users Creation' },
+      { id: 'RolesPermissions', name: 'Roles & Permissions' },
+    ],
+  },
+  {
+    id: 'ProductsCatalog', name: 'Products & Catalog', icon: 'Package',
+    children: [
+      { id: 'Products', name: 'All Products' },
+      { id: 'Categories', name: 'Categories (3-Tier)' },
+    ],
+  },
+  { id: 'Manufacturing', name: 'Manufacturing Specs', icon: 'Factory' },
+  { id: 'Orders', name: 'Orders', icon: 'ShoppingCart' },
+  { id: 'Billing', name: 'Billing & Invoices', icon: 'Receipt' },
+  { id: 'Financials', name: 'Financials & Payments', icon: 'CreditCard' },
+  { id: 'Customers', name: 'Customer Directory', icon: 'Users' },
+  { id: 'Analytics', name: 'Analytics & Insights', icon: 'BarChart3' },
 ];
 
 export const INITIAL_ROLES: Role[] = [
@@ -89,7 +133,7 @@ export const INITIAL_ROLES: Role[] = [
   {
     id: 'role_admin',
     name: 'ADMIN',
-    description: 'Full operational access to store, catalog, orders, billing, and administrative management.',
+    description: 'Full operational access to store, catalog, orders, billing, financials, and administrative management.',
     isDefault: true,
     permissions: ALL_MODULES.map((m) => ({
       module: m.id,
@@ -102,9 +146,9 @@ export const INITIAL_ROLES: Role[] = [
   {
     id: 'role_manager',
     name: 'MANAGER',
-    description: 'Manages catalog, categories, orders, billing, customer directory, and analytics.',
+    description: 'Manages catalog, categories, orders, billing, financials, customer directory, and analytics.',
     permissions: ALL_MODULES.map((m) => {
-      const isAllowed = ['Dashboard', 'Products', 'Categories', 'Orders', 'Billing', 'Customers', 'Analytics'].includes(m.id);
+      const isAllowed = ['Dashboard', 'Products', 'Categories', 'Orders', 'Billing', 'Financials', 'Customers', 'Analytics'].includes(m.id);
       return {
         module: m.id,
         view: isAllowed,
@@ -132,14 +176,14 @@ export const INITIAL_ROLES: Role[] = [
   {
     id: 'role_billing',
     name: 'BILLING',
-    description: 'Handles financial invoicing, GST records, order billing, and customer payment logs.',
+    description: 'Handles financial invoicing, GST records, gateway reconciliations, and customer payment logs.',
     permissions: ALL_MODULES.map((m) => {
-      const isAllowed = ['Dashboard', 'Billing', 'Orders', 'Customers'].includes(m.id);
+      const isAllowed = ['Dashboard', 'Billing', 'Financials', 'Orders', 'Customers'].includes(m.id);
       return {
         module: m.id,
         view: isAllowed,
-        add: ['Billing'].includes(m.id),
-        edit: ['Billing'].includes(m.id),
+        add: ['Billing', 'Financials'].includes(m.id),
+        edit: ['Billing', 'Financials'].includes(m.id),
         delete: false,
       };
     }),
@@ -472,6 +516,7 @@ export function hasPermission(
     if (target.includes('category') && m.includes('category')) return true;
     if (target.includes('order') && m.includes('order')) return true;
     if (target.includes('billing') && m.includes('billing')) return true;
+    if (target.includes('financial') && m.includes('financial')) return true;
     if (target.includes('customer') && m.includes('customer')) return true;
     if (target.includes('analytic') && m.includes('analytic')) return true;
     if ((target.includes('admin') || target.includes('role')) && (m.includes('admin') || m.includes('role'))) return true;

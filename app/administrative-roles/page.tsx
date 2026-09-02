@@ -13,6 +13,7 @@ import {
   AdminUserRecord,
   Permission,
   ALL_MODULES,
+  SIDEBAR_MODULE_GROUPS,
 } from '@/lib/auth';
 import {
   Users,
@@ -28,6 +29,15 @@ import {
   X,
   Check,
   Lock,
+  LayoutDashboard,
+  Package,
+  Factory,
+  ShoppingCart,
+  Receipt,
+  CreditCard,
+  BarChart3,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -70,7 +80,7 @@ function AdministrativeRolesContent() {
   // Modals state
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
-  
+
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUserRecord | null>(null);
 
@@ -154,7 +164,7 @@ function AdministrativeRolesContent() {
       setEditingRole(roleToEdit);
       setRoleName(roleToEdit.name);
       setRoleDescription(roleToEdit.description);
-      
+
       // Ensure all modules are represented in rolePermissions state
       const initialPerms = ALL_MODULES.map((m) => {
         const existing = roleToEdit.permissions.find((p) => p.module === m.id);
@@ -230,11 +240,11 @@ function AdministrativeRolesContent() {
       const updatedRoles = roles.map((r) =>
         r.id === editingRole.id
           ? {
-              ...r,
-              name: roleName.toUpperCase(),
-              description: roleDescription,
-              permissions: rolePermissions,
-            }
+            ...r,
+            name: roleName.toUpperCase(),
+            description: roleDescription,
+            permissions: rolePermissions,
+          }
           : r
       );
       saveRoles(updatedRoles);
@@ -308,16 +318,16 @@ function AdministrativeRolesContent() {
       const updatedUsers = adminUsers.map((u) =>
         u.id === editingUser.id
           ? {
-              ...u,
-              name: userName,
-              email: userEmail,
-              phone: userPhone,
-              roleId: userRoleId,
-              roleName: roleNameFormatted,
-              department: userDepartment,
-              status: userStatus,
-              password: userPassword,
-            }
+            ...u,
+            name: userName,
+            email: userEmail,
+            phone: userPhone,
+            roleId: userRoleId,
+            roleName: roleNameFormatted,
+            department: userDepartment,
+            status: userStatus,
+            password: userPassword,
+          }
           : u
       );
       saveAdminUsers(updatedUsers);
@@ -409,14 +419,13 @@ function AdministrativeRolesContent() {
           <button
             type="button"
             onClick={() => handleTabChange('users')}
-            className={`pb-3 flex items-center gap-2 font-bold text-xs sm:text-sm uppercase tracking-wider transition-all relative ${
-              activeTab === 'users'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-textMuted hover:text-textColor'
-            }`}
+            className={`pb-3 flex items-center gap-2 font-bold text-xs sm:text-sm uppercase tracking-wider transition-all relative ${activeTab === 'users'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-textMuted hover:text-textColor'
+              }`}
           >
             <Users size={17} />
-            <span>Admin Users</span>
+            <span>Users Creation</span>
             <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-extrabold">
               {adminUsers.length}
             </span>
@@ -425,11 +434,10 @@ function AdministrativeRolesContent() {
           <button
             type="button"
             onClick={() => handleTabChange('roles')}
-            className={`pb-3 flex items-center gap-2 font-bold text-xs sm:text-sm uppercase tracking-wider transition-all relative ${
-              activeTab === 'roles'
-                ? 'text-primary border-b-2 border-primary'
-                : 'text-textMuted hover:text-textColor'
-            }`}
+            className={`pb-3 flex items-center gap-2 font-bold text-xs sm:text-sm uppercase tracking-wider transition-all relative ${activeTab === 'roles'
+              ? 'text-primary border-b-2 border-primary'
+              : 'text-textMuted hover:text-textColor'
+              }`}
           >
             <ShieldCheck size={17} />
             <span>Roles & Permissions</span>
@@ -457,7 +465,7 @@ function AdministrativeRolesContent() {
                 className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-md shadow-primary/25 transition-all cursor-pointer"
               >
                 <Plus size={16} />
-                <span>Add New Admin</span>
+                <span>Add New User</span>
               </button>
             </div>
 
@@ -574,11 +582,10 @@ function AdministrativeRolesContent() {
                             {/* Status */}
                             <td className="py-3.5 px-4">
                               <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                  u.status === 'active'
-                                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                                    : 'bg-textMuted/20 text-textMuted'
-                                }`}
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${u.status === 'active'
+                                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                  : 'bg-textMuted/20 text-textMuted'
+                                  }`}
                               >
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                 {u.status}
@@ -862,69 +869,202 @@ function AdministrativeRolesContent() {
                       </button>
                     </div>
 
-                    {/* Module Categories Permission Mapping (Checkboxes) */}
-                    <div className="space-y-6">
-                      {Array.from(new Set(ALL_MODULES.map((m) => m.category))).map(
-                        (catName) => {
-                          const modulesInCat = ALL_MODULES.filter((m) => m.category === catName);
-                          if (modulesInCat.length === 0) return null;
+                    {/* Sidebar-Structured Module & Submodule Permissions */}
+                    <div className="space-y-2">
+                      {SIDEBAR_MODULE_GROUPS.map((group) => {
+                        const ICON_MAP: Record<string, React.ReactNode> = {
+                          LayoutDashboard: <LayoutDashboard size={17} />,
+                          ShieldCheck: <ShieldCheck size={17} />,
+                          Package: <Package size={17} />,
+                          Factory: <Factory size={17} />,
+                          ShoppingCart: <ShoppingCart size={17} />,
+                          Receipt: <Receipt size={17} />,
+                          CreditCard: <CreditCard size={17} />,
+                          Users: <Users size={17} />,
+                          BarChart3: <BarChart3 size={17} />,
+                        };
+
+                        const hasChildren = group.children && group.children.length > 0;
+
+                        if (!hasChildren) {
+                          // Standalone module (no submodules) — e.g. Dashboard, Orders, etc.
+                          const currentPerm = rolePermissions.find((p) => p.module === group.id);
+                          const isChecked = Boolean(currentPerm?.view);
 
                           return (
-                            <div key={catName} className="space-y-2.5">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-textMuted">
-                                  {catName}
+                            <label
+                              key={group.id}
+                              onClick={() => toggleModulePermission(group.id)}
+                              className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer select-none transition-all ${
+                                isChecked
+                                  ? 'bg-primary/10 border-primary/40 shadow-xs'
+                                  : 'bg-bgColor/60 border-borderColor hover:bg-sidebarHover/50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                                    isChecked
+                                      ? 'bg-primary border-primary text-white'
+                                      : 'border-borderColor bg-surfaceColor text-transparent'
+                                  }`}
+                                >
+                                  <Check size={14} strokeWidth={3} />
+                                </div>
+                                <span className={`${
+                                  isChecked ? 'text-primary' : 'text-textMuted'
+                                }`}>
+                                  {ICON_MAP[group.icon]}
                                 </span>
+                                <div>
+                                  <h4 className="font-bold text-xs text-textColor">{group.name}</h4>
+                                  <p className="text-[11px] text-textMuted">Enable access to {group.name}</p>
+                                </div>
                               </div>
-
-                              <div className="space-y-2">
-                                {modulesInCat.map((mod) => {
-                                  const currentPerm = rolePermissions.find((p) => p.module === mod.id);
-                                  const isChecked = Boolean(currentPerm?.view);
-
-                                  return (
-                                    <label
-                                      key={mod.id}
-                                      onClick={() => toggleModulePermission(mod.id)}
-                                      className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer select-none transition-all ${
-                                        isChecked
-                                          ? 'bg-primary/10 border-primary/40 shadow-xs'
-                                          : 'bg-bgColor/60 border-borderColor hover:bg-sidebarHover/50'
-                                      }`}
-                                    >
-                                      <div className="flex items-center gap-3">
-                                        <div
-                                          className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                                            isChecked
-                                              ? 'bg-primary border-primary text-white'
-                                              : 'border-borderColor bg-surfaceColor text-transparent'
-                                          }`}
-                                        >
-                                          <Check size={14} strokeWidth={3} />
-                                        </div>
-                                        <div>
-                                          <h4 className="font-bold text-xs text-textColor">{mod.name}</h4>
-                                          <p className="text-[11px] text-textMuted">Enable access to {mod.name}</p>
-                                        </div>
-                                      </div>
-
-                                      <span
-                                        className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md transition-colors ${
-                                          isChecked
-                                            ? 'bg-primary text-white'
-                                            : 'bg-borderColor/50 text-textMuted'
-                                        }`}
-                                      >
-                                        {isChecked ? 'Allowed' : 'Disabled'}
-                                      </span>
-                                    </label>
-                                  );
-                                })}
-                              </div>
-                            </div>
+                              <span
+                                className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md transition-colors ${
+                                  isChecked
+                                    ? 'bg-primary text-white'
+                                    : 'bg-borderColor/50 text-textMuted'
+                                }`}
+                              >
+                                {isChecked ? 'Allowed' : 'Disabled'}
+                              </span>
+                            </label>
                           );
                         }
-                      )}
+
+                        // Module with submodules — e.g. Administrative Roles, Products & Catalog
+                        const childPerms = group.children!.map((child) => ({
+                          child,
+                          perm: rolePermissions.find((p) => p.module === child.id),
+                        }));
+                        const allChildrenChecked = childPerms.every((cp) => cp.perm?.view);
+                        const someChildrenChecked = childPerms.some((cp) => cp.perm?.view);
+                        const isExpanded = someChildrenChecked || allChildrenChecked;
+
+                        const toggleAllChildren = () => {
+                          const nextState = !allChildrenChecked;
+                          setRolePermissions((prev) =>
+                            prev.map((p) => {
+                              if (group.children!.some((c) => c.id === p.module)) {
+                                return {
+                                  module: p.module,
+                                  view: nextState,
+                                  add: nextState,
+                                  edit: nextState,
+                                  delete: nextState,
+                                };
+                              }
+                              return p;
+                            })
+                          );
+                        };
+
+                        return (
+                          <div key={group.id} className="rounded-xl border border-borderColor overflow-hidden">
+                            {/* Parent module header */}
+                            <div
+                              onClick={toggleAllChildren}
+                              className={`flex items-center justify-between p-3.5 cursor-pointer select-none transition-all ${
+                                someChildrenChecked
+                                  ? 'bg-primary/8 border-b border-primary/20'
+                                  : 'bg-bgColor/60 hover:bg-sidebarHover/50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                                    allChildrenChecked
+                                      ? 'bg-primary border-primary text-white'
+                                      : someChildrenChecked
+                                        ? 'bg-primary/40 border-primary/60 text-white'
+                                        : 'border-borderColor bg-surfaceColor text-transparent'
+                                  }`}
+                                >
+                                  {someChildrenChecked && !allChildrenChecked ? (
+                                    <span className="w-2 h-0.5 bg-white rounded-full" />
+                                  ) : (
+                                    <Check size={14} strokeWidth={3} />
+                                  )}
+                                </div>
+                                <span className={`${
+                                  someChildrenChecked ? 'text-primary' : 'text-textMuted'
+                                }`}>
+                                  {ICON_MAP[group.icon]}
+                                </span>
+                                <div>
+                                  <h4 className="font-bold text-xs text-textColor">{group.name}</h4>
+                                  <p className="text-[11px] text-textMuted">
+                                    {childPerms.filter((cp) => cp.perm?.view).length}/{group.children!.length} submodules enabled
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md transition-colors ${
+                                    allChildrenChecked
+                                      ? 'bg-primary text-white'
+                                      : someChildrenChecked
+                                        ? 'bg-primary/20 text-primary'
+                                        : 'bg-borderColor/50 text-textMuted'
+                                  }`}
+                                >
+                                  {allChildrenChecked ? 'All Allowed' : someChildrenChecked ? 'Partial' : 'Disabled'}
+                                </span>
+                                <span className="text-textMuted">
+                                  {isExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Submodule children — always visible */}
+                            <div className="divide-y divide-borderColor/40">
+                              {group.children!.map((child) => {
+                                const childPerm = rolePermissions.find((p) => p.module === child.id);
+                                const isChildChecked = Boolean(childPerm?.view);
+
+                                return (
+                                  <label
+                                    key={child.id}
+                                    onClick={(e) => { e.stopPropagation(); toggleModulePermission(child.id); }}
+                                    className={`flex items-center justify-between py-3 px-4 pl-12 cursor-pointer select-none transition-all ${
+                                      isChildChecked
+                                        ? 'bg-primary/5'
+                                        : 'bg-bgColor/30 hover:bg-sidebarHover/30'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div
+                                        className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                                          isChildChecked
+                                            ? 'bg-primary border-primary text-white'
+                                            : 'border-borderColor bg-surfaceColor text-transparent'
+                                        }`}
+                                      >
+                                        <Check size={11} strokeWidth={3} />
+                                      </div>
+                                      <div>
+                                        <h5 className="font-semibold text-[11px] text-textColor">{child.name}</h5>
+                                        <p className="text-[10px] text-textMuted">Enable access to {child.name}</p>
+                                      </div>
+                                    </div>
+                                    <span
+                                      className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded transition-colors ${
+                                        isChildChecked
+                                          ? 'bg-primary text-white'
+                                          : 'bg-borderColor/50 text-textMuted'
+                                      }`}
+                                    >
+                                      {isChildChecked ? 'Allowed' : 'Disabled'}
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {/* Footer Buttons */}

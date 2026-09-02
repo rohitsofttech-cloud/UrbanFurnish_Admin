@@ -15,7 +15,9 @@ import {
   X,
   PlusCircle,
   Receipt,
+  CreditCard,
   ShieldCheck,
+  Factory,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { hasPermission } from '@/lib/auth';
@@ -44,6 +46,17 @@ const MENU_DATA: SidebarCategory[] = [
     icon: <LayoutDashboard size={19} />,
     path: '/dashboard',
   },
+
+  {
+    category: 'Administrative Roles',
+    permissionKey: 'AdminUsers',
+    icon: <ShieldCheck size={19} />,
+    badge: 'RBAC',
+    children: [
+      { name: 'Users Creation', path: '/administrative-roles?tab=users', icon: <Users size={15} />, permissionKey: 'AdminUsers' },
+      { name: 'Roles & Permissions', path: '/administrative-roles?tab=roles', icon: <ShieldCheck size={15} />, permissionKey: 'RolesPermissions' },
+    ],
+  },
   {
     category: 'Products & Catalog',
     permissionKey: 'Products',
@@ -52,6 +65,12 @@ const MENU_DATA: SidebarCategory[] = [
       { name: 'All Products', path: '/products', icon: <Package size={15} />, permissionKey: 'Products' },
       { name: 'Categories (3-Tier)', path: '/categories', icon: <Tags size={15} />, permissionKey: 'Categories' },
     ],
+  },
+  {
+    category: 'Manufacturing Specs',
+    permissionKey: 'Manufacturing',
+    icon: <Factory size={19} />,
+    path: '/manufacturing',
   },
   {
     category: 'Orders',
@@ -68,6 +87,12 @@ const MENU_DATA: SidebarCategory[] = [
     badge: 'GST',
   },
   {
+    category: 'Financials & Payments',
+    permissionKey: 'Financials',
+    icon: <CreditCard size={19} />,
+    path: '/financials',
+  },
+  {
     category: 'Customer Directory',
     permissionKey: 'Customers',
     icon: <Users size={19} />,
@@ -78,16 +103,6 @@ const MENU_DATA: SidebarCategory[] = [
     permissionKey: 'Analytics',
     icon: <BarChart3 size={19} />,
     path: '/analytics',
-  },
-  {
-    category: 'Administrative Roles',
-    permissionKey: 'AdminUsers',
-    icon: <ShieldCheck size={19} />,
-    badge: 'RBAC',
-    children: [
-      { name: 'Admin Users', path: '/administrative-roles?tab=users', icon: <Users size={15} />, permissionKey: 'AdminUsers' },
-      { name: 'Roles & Permissions', path: '/administrative-roles?tab=roles', icon: <ShieldCheck size={15} />, permissionKey: 'RolesPermissions' },
-    ],
   },
 ];
 

@@ -98,6 +98,8 @@ export default function OrderDetailPage() {
   const [isOrderSlipModalOpen, setIsOrderSlipModalOpen] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
+
   useEffect(() => {
     let resolvedId = routeId;
     if (!resolvedId && typeof window !== 'undefined') {
@@ -275,13 +277,12 @@ export default function OrderDetailPage() {
                     <div
                       key={step.key}
                       onClick={() => updateStatus(order.id, step.key)}
-                      className={`cursor-pointer group flex flex-col p-3 rounded-xl border transition-all ${
-                        isCurrent
-                          ? 'bg-primary/10 border-primary shadow-xs ring-1 ring-primary/30'
-                          : isCompleted
+                      className={`cursor-pointer group flex flex-col p-3 rounded-xl border transition-all ${isCurrent
+                        ? 'bg-primary/10 border-primary shadow-xs ring-1 ring-primary/30'
+                        : isCompleted
                           ? 'bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40'
                           : 'bg-bgColor/50 border-borderColor/60 opacity-60 hover:opacity-100'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-textMuted">
@@ -324,7 +325,7 @@ export default function OrderDetailPage() {
                   <p className="text-xs text-textMuted">Manufactured & Fulfilled by Urbn Furnish Direct</p>
                 </div>
                 <span className="text-xs font-mono font-bold text-textColor bg-bgColor px-3 py-1 rounded-lg border border-borderColor">
-                  ₹{order.pricing.subtotal.toLocaleString('en-IN')} Subtotal
+                  {order.items.reduce((sum, item) => sum + item.quantity, 0)} Total Qty
                 </span>
               </div>
 
@@ -332,12 +333,19 @@ export default function OrderDetailPage() {
                 {order.items.map((item) => (
                   <div key={item.id} className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-sidebarHover/30 transition-colors">
                     <div className="flex items-center gap-4">
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-bgColor border border-borderColor overflow-hidden shrink-0 relative">
+                      <div
+                        onClick={() => setPreviewImage({ url: item.imageUrl, name: item.name })}
+                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-bgColor border border-borderColor overflow-hidden shrink-0 relative cursor-pointer group hover:border-primary transition-all"
+                        title="Click to view full image"
+                      >
                         <img
                           src={item.imageUrl}
                           alt={item.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                         />
+                        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">
+                          View
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-md">
@@ -361,46 +369,15 @@ export default function OrderDetailPage() {
                     </div>
 
                     <div className="text-left sm:text-right shrink-0 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-0 border-borderColor/40 flex sm:flex-col justify-between items-center sm:items-end">
-                      <p className="text-xs text-textMuted">
-                        ₹{item.unitPrice.toLocaleString('en-IN')} × {item.quantity}
+                      <p className="text-xs text-textMuted font-medium">
+                        Quantity
                       </p>
-                      <p className="text-sm sm:text-base font-extrabold text-textColor font-mono">
-                        ₹{item.total.toLocaleString('en-IN')}
+                      <p className="text-sm sm:text-base font-extrabold text-textColor font-mono bg-bgColor px-3 py-1 rounded-lg border border-borderColor">
+                        {item.quantity} Qty
                       </p>
                     </div>
                   </div>
                 ))}
-              </div>
-
-              <div className="p-5 bg-bgColor/40 border-t border-borderColor space-y-2.5">
-                <div className="flex items-center justify-between text-xs text-textMuted">
-                  <span>Items Subtotal</span>
-                  <span className="font-mono text-textColor font-semibold">₹{order.pricing.subtotal.toLocaleString('en-IN')}</span>
-                </div>
-                {order.pricing.discount > 0 && (
-                  <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400">
-                    <span className="flex items-center gap-1">
-                      Coupon Applied ({order.pricing.couponCode || 'PROMO'})
-                    </span>
-                    <span className="font-mono font-semibold">- ₹{order.pricing.discount.toLocaleString('en-IN')}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-xs text-textMuted">
-                  <span>Estimated GST / Tax (CGST 9% + SGST 9%)</span>
-                  <span className="font-mono text-textColor">₹{order.pricing.totalTax.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-textMuted">
-                  <span>Shipping & Delivery (White Glove)</span>
-                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-                    {order.pricing.shipping === 0 ? 'FREE' : `₹${order.pricing.shipping}`}
-                  </span>
-                </div>
-                <div className="pt-3 border-t border-borderColor flex items-center justify-between text-sm sm:text-base font-black text-textColor">
-                  <span>Total Amount Paid</span>
-                  <span className="font-mono text-primary text-lg">
-                    ₹{order.pricing.grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
               </div>
             </div>
           </div>
@@ -414,57 +391,17 @@ export default function OrderDetailPage() {
 
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full overflow-hidden bg-bgColor border border-borderColor shrink-0">
-                  {order.customer.avatar ? (
-                    <img
-                      src={order.customer.avatar}
-                      alt={order.customer.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center font-bold text-textColor bg-primary/20">
-                      {order.customer.name.slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
+
+                  <div className="w-full h-full flex items-center justify-center font-bold text-textColor bg-primary/20">
+                    {order.customer.name.slice(0, 2).toUpperCase()}
+                  </div>
+
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-textColor">{order.customer.name}</h3>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary/15 text-primary">
                     {order.customer.customerType}
                   </span>
-                </div>
-              </div>
-
-              <div className="space-y-2.5 pt-2 border-t border-borderColor/60 text-xs">
-                <div className="flex items-center justify-between group">
-                  <div className="flex items-center gap-2 text-textMuted">
-                    <Mail size={13} />
-                    <span className="text-textColor">{order.customer.email}</span>
-                  </div>
-                  <button
-                    onClick={() => handleCopy(order.customer.email, 'custEmail')}
-                    className="text-textMuted hover:text-textColor p-1"
-                    title="Copy Email"
-                  >
-                    {copiedField === 'custEmail' ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between group">
-                  <div className="flex items-center gap-2 text-textMuted">
-                    <Phone size={13} />
-                    <span className="text-textColor">{order.customer.phone}</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-2">
-                  <div className="p-2.5 rounded-xl bg-bgColor border border-borderColor text-center">
-                    <p className="text-[10px] text-textMuted uppercase font-bold">Total Orders</p>
-                    <p className="text-sm font-bold text-textColor font-mono">{order.customer.ordersCount}</p>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-bgColor border border-borderColor text-center">
-                    <p className="text-[10px] text-textMuted uppercase font-bold">Lifetime Value</p>
-                    <p className="text-sm font-bold text-textColor font-mono">₹{order.customer.lifetimeSpend.toLocaleString('en-IN')}</p>
-                  </div>
                 </div>
               </div>
             </div>
@@ -485,17 +422,40 @@ export default function OrderDetailPage() {
                   <span className="font-mono font-bold text-textColor">{order.shippingAddress.pinCode}</span>
                 </p>
                 <p>{order.shippingAddress.country}</p>
-                <p className="pt-1 text-textColor font-medium">Contact: {order.shippingAddress.phone}</p>
-              </div>
-
-              <div className="pt-2 border-t border-borderColor/60">
-                <span className="text-[11px] font-semibold text-textMuted bg-bgColor px-2.5 py-1 rounded-lg border border-borderColor inline-block">
-                  Method: {order.fulfillment.shippingMethod}
-                </span>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Product Image Popup Modal */}
+        {previewImage && (
+          <div
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+            onClick={() => setPreviewImage(null)}
+          >
+            <div
+              className="relative max-w-2xl w-full bg-surfaceColor border border-borderColor rounded-2xl overflow-hidden shadow-2xl p-4 space-y-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-textColor truncate max-w-[85%]">{previewImage.name}</h4>
+                <button
+                  onClick={() => setPreviewImage(null)}
+                  className="p-1 rounded-lg bg-bgColor text-textMuted hover:text-textColor hover:bg-sidebarHover transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="w-full h-[60vh] max-h-[500px] rounded-xl overflow-hidden bg-black/20 flex items-center justify-center border border-borderColor">
+                <img
+                  src={previewImage.url}
+                  alt={previewImage.name}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {isStatusModalOpen && (
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -533,11 +493,10 @@ export default function OrderDetailPage() {
                         type="button"
                         key={st}
                         onClick={() => setSelectedStatus(st)}
-                        className={`p-2.5 rounded-xl text-xs font-bold border text-left transition-all ${
-                          selectedStatus === st
-                            ? 'bg-primary text-white border-primary shadow-xs'
-                            : 'bg-bgColor border-borderColor text-textColor hover:bg-sidebarHover'
-                        }`}
+                        className={`p-2.5 rounded-xl text-xs font-bold border text-left transition-all ${selectedStatus === st
+                          ? 'bg-primary text-white border-primary shadow-xs'
+                          : 'bg-bgColor border-borderColor text-textColor hover:bg-sidebarHover'
+                          }`}
                       >
                         {st}
                       </button>

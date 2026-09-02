@@ -12,6 +12,7 @@ export default function PublicOrderSlipPage() {
   
   const [order, setOrder] = useState<AdminOrder | null>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [productQrs, setProductQrs] = useState<Record<string, { qr: string; url: string }>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -53,6 +54,30 @@ export default function PublicOrderSlipPage() {
         .catch((err) => {
           console.error('Error generating QR code', err);
         });
+
+      // Generate QR codes for each product line item
+      const qrs: Record<string, { qr: string; url: string }> = {};
+      const promises = order.items.map(async (item) => {
+        const specUrl = `${origin}/manufacturing/${encodeURIComponent(item.id)}`;
+        try {
+          const qrUri = await QRCode.toDataURL(specUrl, {
+            width: 200,
+            margin: 1,
+            color: {
+              dark: '#000000',
+              light: '#ffffff',
+            },
+            errorCorrectionLevel: 'M',
+          });
+          qrs[item.id] = { qr: qrUri, url: specUrl };
+        } catch (e) {
+          console.error(`Error generating QR for item ${item.id}:`, e);
+        }
+      });
+
+      Promise.all(promises).then(() => {
+        setProductQrs({ ...qrs });
+      });
     }
   }, [order]);
 
@@ -160,31 +185,72 @@ export default function PublicOrderSlipPage() {
           <table className="w-full text-left text-[10.5px] border-collapse">
             <thead>
               <tr className="border-b border-black font-black bg-gray-200/90 text-black">
+                <th className="p-1.5 border-r border-black w-10 text-center">Img</th>
+                <th className="p-1.5 border-r border-black text-center w-14">Spec QR</th>
                 <th className="p-1.5 border-r border-black">Product</th>
-                <th className="p-1.5 text-center w-14">Qty</th>
+                <th className="p-1.5 text-center w-12">Qty</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-300">
-              {order.items.map((item) => (
-                <tr key={item.id}>
-                  <td className="p-1.5 border-r border-black leading-snug">
-                    <span className="font-bold text-black block">{item.name}</span>
-                    {item.variant && (
-                      <span className="text-[9.5px] text-gray-700 block font-mono">
-                        [{item.variant}]
+              {order.items.map((item) => {
+                const pqr = productQrs[item.id];
+                return (
+                  <tr key={item.id}>
+                    <td className="p-1.5 border-r border-black align-middle text-center">
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-8 h-8 object-cover mx-auto rounded border border-gray-300"
+                      />
+                    </td>
+                    <td className="p-1 border-r border-black align-middle text-center">
+                      {pqr?.qr ? (
+                        <a
+                          href={pqr.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex flex-col items-center group cursor-pointer"
+                          title="Click to view manufacturing spec"
+                        >
+                          <img
+                            src={pqr.qr}
+                            alt={`QR for ${item.id}`}
+                            className="w-8 h-8 object-contain border border-black rounded-xs group-hover:scale-105 transition-transform"
+                          />
+                          <span className="font-mono text-[7.5px] font-black group-hover:underline">
+                            {item.id}
+                          </span>
+                        </a>
+                      ) : (
+                        <span className="font-mono text-[9px] font-bold">{item.id}</span>
+                      )}
+                    </td>
+                    <td className="p-1.5 border-r border-black leading-snug">
+                      <a
+                        href={`/manufacturing/${encodeURIComponent(item.id)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-bold text-black hover:text-amber-800 block hover:underline"
+                      >
+                        {item.name}
+                      </a>
+                      {item.variant && (
+                        <span className="text-[9.5px] text-gray-700 block font-mono">
+                          [{item.variant}]
+                        </span>
+                      )}
+                      <span className="text-[9px] text-gray-600 font-mono block">
+                        SKU: {item.sku}
                       </span>
-                    )}
-                    <span className="text-[9px] text-gray-600 font-mono block">
-                      SKU: {item.sku}
-                    </span>
-                  </td>
-                  <td className="p-1.5 text-center font-bold text-black align-middle font-mono text-xs">
-                    {item.quantity}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="p-1.5 text-center font-bold text-black align-middle font-mono text-xs">
+                      {item.quantity}
+                    </td>
+                  </tr>
+                );
+              })}
               <tr className="border-t-2 border-black font-black bg-gray-100">
-                <td className="p-1.5 border-r border-black font-bold text-black">Total</td>
+                <td colSpan={3} className="p-1.5 border-r border-black font-bold text-black">Total</td>
                 <td className="p-1.5 text-center font-mono font-bold text-black">{totalQuantity}</td>
               </tr>
             </tbody>

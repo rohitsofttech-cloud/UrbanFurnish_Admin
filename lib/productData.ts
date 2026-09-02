@@ -572,3 +572,56 @@ export const SEED_PRODUCTS: AdminProduct[] = [
     createdAt: '2026-03-20T10:00:00Z',
   },
 ];
+
+export const PRODUCTS_STORAGE_KEY = 'urbn_admin_products_v1';
+
+/**
+ * Retrieve all products combining localStorage additions and seed data
+ */
+export function getAllProducts(): AdminProduct[] {
+  if (typeof window === 'undefined') return SEED_PRODUCTS;
+  try {
+    const raw = localStorage.getItem(PRODUCTS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error('Error reading products from storage:', err);
+  }
+  return SEED_PRODUCTS;
+}
+
+/**
+ * Get a specific product by exact ID or slug
+ */
+export function getProductById(idOrSlug: string): AdminProduct | undefined {
+  if (!idOrSlug) return undefined;
+  const list = getAllProducts();
+  const normalized = idOrSlug.trim().toLowerCase();
+  return list.find(
+    (p) => p.id.toLowerCase() === normalized || p.slug.toLowerCase() === normalized
+  );
+}
+
+/**
+ * Search products for manufacturing lookup
+ */
+export function searchProductsForManufacturing(query: string): AdminProduct[] {
+  const list = getAllProducts();
+  if (!query || !query.trim()) return list;
+  const q = query.trim().toLowerCase();
+  return list.filter(
+    (p) =>
+      p.id.toLowerCase().includes(q) ||
+      p.name.toLowerCase().includes(q) ||
+      p.material.toLowerCase().includes(q) ||
+      p.finish.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q) ||
+      (p.seatingCapacity && p.seatingCapacity.toLowerCase().includes(q)) ||
+      (p.storageType && p.storageType.toLowerCase().includes(q))
+  );
+}
+

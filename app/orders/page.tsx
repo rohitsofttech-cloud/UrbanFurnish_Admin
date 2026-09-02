@@ -282,17 +282,15 @@ export default function OrdersPage() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap select-none ${
-                  isActive
-                    ? 'bg-primary text-white shadow-xs'
-                    : 'text-textMuted hover:text-textColor hover:bg-surfaceColor'
-                }`}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap select-none ${isActive
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'text-textMuted hover:text-textColor hover:bg-surfaceColor'
+                  }`}
               >
                 <span>{tab}</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-borderColor text-textMuted'
-                  }`}
+                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${isActive ? 'bg-white/20 text-white' : 'bg-borderColor text-textMuted'
+                    }`}
                 >
                   {count}
                 </span>
@@ -390,7 +388,6 @@ export default function OrdersPage() {
                   <th className="px-5 py-3">Customer</th>
                   <th className="px-5 py-3">Payment</th>
                   <th className="px-5 py-3">Items Ordered</th>
-                  <th className="px-5 py-3">Total Amount</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
@@ -413,9 +410,8 @@ export default function OrdersPage() {
                     return (
                       <tr
                         key={order.id}
-                        className={`hover:bg-sidebarHover/40 transition-colors group ${
-                          isSelected ? 'bg-primary/5' : ''
-                        }`}
+                        className={`hover:bg-sidebarHover/40 transition-colors group ${isSelected ? 'bg-primary/5' : ''
+                          }`}
                       >
                         <td className="px-5 py-4">
                           <input
@@ -483,23 +479,6 @@ export default function OrdersPage() {
                           </div>
                         </td>
 
-                        {/* Payment */}
-                        <td className="px-5 py-4">
-                          <div className="space-y-0.5">
-                            <p className="text-xs font-semibold text-textColor">{order.paymentMethod}</p>
-                            <span
-                              className={`inline-block text-[10px] font-bold px-2 py-0.2 rounded-full border ${
-                                order.paymentStatus === 'Paid'
-                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                                  : order.paymentStatus === 'Pending'
-                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                                  : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
-                              }`}
-                            >
-                              {order.paymentStatus}
-                            </span>
-                          </div>
-                        </td>
 
                         {/* Items preview avatars */}
                         <td className="px-5 py-4">
@@ -519,11 +498,6 @@ export default function OrdersPage() {
                               {order.items.reduce((sum, i) => sum + i.quantity, 0)} items
                             </span>
                           </div>
-                        </td>
-
-                        {/* Total Amount */}
-                        <td className="px-5 py-4 font-mono font-bold text-xs text-textColor">
-                          ₹{order.pricing.grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
 
                         {/* Manual Status Selector Inline */}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PUBLIC_PATHS = ['/auth/login', '/slip', '/orders/slip'];
+const PUBLIC_PATHS = ['/auth/login', '/slip', '/orders/slip', '/manufacturing'];
 const COOKIE_NAME = 'urbn_admin_token';
 
 export function middleware(request: NextRequest) {

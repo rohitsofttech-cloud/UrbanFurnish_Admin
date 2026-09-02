@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link';
 import AdminLayout from '../common/AdminLayout';
 import {
   Package,
@@ -17,6 +18,7 @@ import {
   Star,
   TrendingUp,
   X,
+  Factory,
 } from 'lucide-react';
 import { SEED_PRODUCTS, AdminProduct, PRODUCT_CATEGORIES } from '@/lib/productData';
 import ProductFormModal from './ProductFormModal';
@@ -153,7 +155,14 @@ export default function ProductsPage() {
               Manage furniture items, variants, stock inventory, and pricing.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href="/manufacturing"
+              className="px-4 py-2.5 rounded-xl bg-bgColor border border-borderColor text-textColor hover:bg-sidebarHover hover:border-primary/30 font-bold text-xs flex items-center gap-2 transition-all"
+            >
+              <Factory size={15} className="text-primary" />
+              <span>Manufacturing Specs</span>
+            </Link>
             <button
               onClick={() => setShowCsvUpload(true)}
               className="px-4 py-2.5 rounded-xl bg-bgColor border border-borderColor text-textColor hover:bg-sidebarHover hover:border-primary/30 font-bold text-xs flex items-center gap-2 transition-all"
@@ -379,6 +388,13 @@ export default function ProductsPage() {
                         <td className="px-5 py-3.5">{getStockBadge(product)}</td>
                         <td className="px-5 py-3.5 text-right">
                           <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                            <Link
+                              href={`/manufacturing/${encodeURIComponent(product.id)}`}
+                              className="p-1.5 rounded-lg text-textMuted hover:text-amber-600 hover:bg-bgColor transition-colors"
+                              title="View Manufacturing Spec Sheet"
+                            >
+                              <Factory size={14} />
+                            </Link>
                             <button
                               onClick={() => {
                                 setEditingProduct(product);
