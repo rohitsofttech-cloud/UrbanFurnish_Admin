@@ -86,12 +86,12 @@ const MENU_DATA: SidebarCategory[] = [
     path: '/billing',
     badge: 'GST',
   },
-  {
-    category: 'Financials & Payments',
-    permissionKey: 'Financials',
-    icon: <CreditCard size={19} />,
-    path: '/financials',
-  },
+  // {
+  //   category: 'Financials & Payments',
+  //   permissionKey: 'Financials',
+  //   icon: <CreditCard size={19} />,
+  //   path: '/financials',
+  // },
   {
     category: 'Customer Directory',
     permissionKey: 'Customers',
