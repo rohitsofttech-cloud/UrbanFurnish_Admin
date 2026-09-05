@@ -86,8 +86,8 @@ export default function DashboardPage() {
     timeframe === '7D'
       ? REVENUE_DATA_7D
       : timeframe === '30D'
-      ? REVENUE_DATA_30D
-      : REVENUE_DATA_12M;
+        ? REVENUE_DATA_30D
+        : REVENUE_DATA_12M;
 
   const maxRevenue = Math.max(...activeData.map((d) => d.revenue)) * 1.15;
   const chartHeight = 220;
@@ -210,9 +210,8 @@ export default function DashboardPage() {
                 </span>
                 <div className="flex items-center gap-1.5 text-xs">
                   <span
-                    className={`flex items-center font-bold ${
-                      metric.isPositive ? 'text-emerald-500' : 'text-red-500'
-                    }`}
+                    className={`flex items-center font-bold ${metric.isPositive ? 'text-emerald-500' : 'text-red-500'
+                      }`}
                   >
                     {metric.isPositive ? (
                       <ArrowUpRight size={15} />
@@ -256,11 +255,10 @@ export default function DashboardPage() {
                       setTimeframe(t);
                       setHoveredPoint(null);
                     }}
-                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                      timeframe === t
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${timeframe === t
                         ? 'bg-primary text-white shadow-xs'
                         : 'text-textMuted hover:text-textColor'
-                    }`}
+                      }`}
                   >
                     {t === '7D' ? 'Last 7 Days' : t === '30D' ? 'Last 30 Days' : 'Past Year'}
                   </button>
@@ -332,11 +330,10 @@ export default function DashboardPage() {
                       cx={p.x}
                       cy={p.y}
                       r={hoveredPoint === idx ? 7 : 4.5}
-                      className={`transition-all duration-150 ${
-                        hoveredPoint === idx
+                      className={`transition-all duration-150 ${hoveredPoint === idx
                           ? 'fill-emerald-500 stroke-white dark:stroke-surfaceColor stroke-[3px]'
                           : 'fill-white dark:fill-surfaceColor stroke-emerald-500 stroke-[2.5px]'
-                      }`}
+                        }`}
                       onMouseEnter={() => setHoveredPoint(idx)}
                     />
                     {/* X Axis Labels */}
@@ -344,11 +341,10 @@ export default function DashboardPage() {
                       x={p.x}
                       y={chartHeight - 4}
                       textAnchor="middle"
-                      className={`text-[10px] font-semibold transition-colors ${
-                        hoveredPoint === idx
+                      className={`text-[10px] font-semibold transition-colors ${hoveredPoint === idx
                           ? 'fill-emerald-500 font-bold'
                           : 'fill-textMuted'
-                      }`}
+                        }`}
                     >
                       {p.label}
                     </text>
@@ -475,48 +471,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Order Fulfillment Pipeline Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/15 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <Clock size={18} />
-            </div>
-            <div>
-              <span className="text-xs text-textMuted block font-medium">To Process</span>
-              <span className="text-base font-extrabold text-textColor">14 Orders</span>
-            </div>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/15 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <Package size={18} />
-            </div>
-            <div>
-              <span className="text-xs text-textMuted block font-medium">Packaging</span>
-              <span className="text-base font-extrabold text-textColor">28 Orders</span>
-            </div>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-indigo-500/5 border border-indigo-500/15 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              <Truck size={18} />
-            </div>
-            <div>
-              <span className="text-xs text-textMuted block font-medium">In Transit</span>
-              <span className="text-base font-extrabold text-textColor">65 Orders</span>
-            </div>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/15 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 size={18} />
-            </div>
-            <div>
-              <span className="text-xs text-textMuted block font-medium">Delivered Today</span>
-              <span className="text-base font-extrabold text-textColor">42 Orders</span>
-            </div>
-          </div>
-        </div>
 
         {/* Main Grid: Recent Orders & Top Selling Products */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -634,9 +588,8 @@ export default function DashboardPage() {
                       {product.sales} sold
                     </span>
                     <span
-                      className={`text-[10px] font-bold ${
-                        product.stock <= 5 ? 'text-amber-500' : 'text-emerald-500'
-                      }`}
+                      className={`text-[10px] font-bold ${product.stock <= 5 ? 'text-amber-500' : 'text-emerald-500'
+                        }`}
                     >
                       {product.stock} in stock
                     </span>

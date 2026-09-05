@@ -59,8 +59,8 @@ export interface AuthResponse {
 const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_API_URL || '';
 const TOKEN_KEY = 'urbn_admin_token';
 const USER_KEY = 'urbn_admin_user';
-const ROLES_STORAGE_KEY = 'urbn_admin_roles_v4';
-const ADMIN_USERS_STORAGE_KEY = 'urbn_admin_users_v4';
+const ROLES_STORAGE_KEY = 'urbn_admin_roles_v5';
+const ADMIN_USERS_STORAGE_KEY = 'urbn_admin_users_v5';
 
 export interface ModuleDefinition {
   id: string;
@@ -73,14 +73,14 @@ export interface ModuleDefinition {
 
 export const ALL_MODULES: ModuleDefinition[] = [
   { id: 'Dashboard', name: 'Dashboard', category: 'GENERAL', hasActions: false },
-  { id: 'AdminUsers', name: 'Users Creation', category: 'ADMINISTRATION', hasActions: true, parentModule: 'AdministrativeRoles', children: undefined },
-  { id: 'RolesPermissions', name: 'Roles & Permissions', category: 'ADMINISTRATION', hasActions: true, parentModule: 'AdministrativeRoles', children: undefined },
-  { id: 'Products', name: 'All Products', category: 'PRODUCTS & CATALOG', hasActions: true, parentModule: 'ProductsCatalog', children: undefined },
-  { id: 'Categories', name: 'Categories (3-Tier)', category: 'PRODUCTS & CATALOG', hasActions: true, parentModule: 'ProductsCatalog', children: undefined },
+  { id: 'AdminUsers', name: 'Users Creation', category: 'ADMINISTRATION', hasActions: true, parentModule: 'AdministrativeRoles' },
+  { id: 'RolesPermissions', name: 'Roles & Permissions', category: 'ADMINISTRATION', hasActions: true, parentModule: 'AdministrativeRoles' },
+  { id: 'Products', name: 'All Products', category: 'PRODUCTS & CATALOG', hasActions: true, parentModule: 'ProductsCatalog' },
+  { id: 'Categories', name: 'Categories (3-Tier)', category: 'PRODUCTS & CATALOG', hasActions: true, parentModule: 'ProductsCatalog' },
   { id: 'Manufacturing', name: 'Manufacturing Specs', category: 'MANUFACTURING', hasActions: false },
   { id: 'Orders', name: 'Orders', category: 'ORDERS & BILLING', hasActions: true },
-  { id: 'Billing', name: 'Billing & Invoices', category: 'ORDERS & BILLING', hasActions: true },
-  { id: 'Financials', name: 'Financials & Payments', category: 'FINANCIALS', hasActions: true },
+  { id: 'Billing', name: 'Tax Invoices', category: 'BILLING & INVOICES', hasActions: true, parentModule: 'BillingModule' },
+  { id: 'Quotations', name: 'Custom Quotation', category: 'BILLING & INVOICES', hasActions: true, parentModule: 'BillingModule' },
   { id: 'Customers', name: 'Customer Directory', category: 'CUSTOMERS', hasActions: true },
   { id: 'Analytics', name: 'Analytics & Insights', category: 'ANALYTICS', hasActions: false },
 ];
@@ -96,14 +96,18 @@ export interface SidebarModuleGroup {
 export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
   { id: 'Dashboard', name: 'Dashboard', icon: 'LayoutDashboard' },
   {
-    id: 'AdministrativeRoles', name: 'Administrative Roles', icon: 'ShieldCheck',
+    id: 'AdministrativeRoles',
+    name: 'Administrative Roles',
+    icon: 'ShieldCheck',
     children: [
       { id: 'AdminUsers', name: 'Users Creation' },
       { id: 'RolesPermissions', name: 'Roles & Permissions' },
     ],
   },
   {
-    id: 'ProductsCatalog', name: 'Products & Catalog', icon: 'Package',
+    id: 'ProductsCatalog',
+    name: 'Products & Catalog',
+    icon: 'Package',
     children: [
       { id: 'Products', name: 'All Products' },
       { id: 'Categories', name: 'Categories (3-Tier)' },
@@ -111,8 +115,15 @@ export const SIDEBAR_MODULE_GROUPS: SidebarModuleGroup[] = [
   },
   { id: 'Manufacturing', name: 'Manufacturing Specs', icon: 'Factory' },
   { id: 'Orders', name: 'Orders', icon: 'ShoppingCart' },
-  { id: 'Billing', name: 'Billing & Invoices', icon: 'Receipt' },
-  { id: 'Financials', name: 'Financials & Payments', icon: 'CreditCard' },
+  {
+    id: 'BillingModule',
+    name: 'Billing & Invoices',
+    icon: 'Receipt',
+    children: [
+      { id: 'Billing', name: 'Tax Invoices' },
+      { id: 'Quotations', name: 'Custom Quotation' },
+    ],
+  },
   { id: 'Customers', name: 'Customer Directory', icon: 'Users' },
   { id: 'Analytics', name: 'Analytics & Insights', icon: 'BarChart3' },
 ];
@@ -133,7 +144,7 @@ export const INITIAL_ROLES: Role[] = [
   {
     id: 'role_admin',
     name: 'ADMIN',
-    description: 'Full operational access to store, catalog, orders, billing, financials, and administrative management.',
+    description: 'Full operational access to store, catalog, orders, billing, custom quotations, and administrative management.',
     isDefault: true,
     permissions: ALL_MODULES.map((m) => ({
       module: m.id,
@@ -146,9 +157,9 @@ export const INITIAL_ROLES: Role[] = [
   {
     id: 'role_manager',
     name: 'MANAGER',
-    description: 'Manages catalog, categories, orders, billing, financials, customer directory, and analytics.',
+    description: 'Manages catalog, categories, orders, billing, custom quotations, customer directory, and analytics.',
     permissions: ALL_MODULES.map((m) => {
-      const isAllowed = ['Dashboard', 'Products', 'Categories', 'Orders', 'Billing', 'Financials', 'Customers', 'Analytics'].includes(m.id);
+      const isAllowed = ['Dashboard', 'Products', 'Categories', 'Orders', 'Billing', 'Quotations', 'Customers', 'Analytics'].includes(m.id);
       return {
         module: m.id,
         view: isAllowed,
@@ -161,14 +172,14 @@ export const INITIAL_ROLES: Role[] = [
   {
     id: 'role_sales',
     name: 'SALES',
-    description: 'Handles order processing, customer accounts, catalog browsing, and sales analytics.',
+    description: 'Handles order processing, custom quotations, customer accounts, catalog browsing, and sales analytics.',
     permissions: ALL_MODULES.map((m) => {
-      const isAllowed = ['Dashboard', 'Orders', 'Customers', 'Products', 'Categories'].includes(m.id);
+      const isAllowed = ['Dashboard', 'Orders', 'Quotations', 'Customers', 'Products', 'Categories'].includes(m.id);
       return {
         module: m.id,
         view: isAllowed,
-        add: ['Orders', 'Customers'].includes(m.id),
-        edit: ['Orders', 'Customers'].includes(m.id),
+        add: ['Orders', 'Quotations', 'Customers'].includes(m.id),
+        edit: ['Orders', 'Quotations', 'Customers'].includes(m.id),
         delete: false,
       };
     }),
@@ -176,14 +187,14 @@ export const INITIAL_ROLES: Role[] = [
   {
     id: 'role_billing',
     name: 'BILLING',
-    description: 'Handles financial invoicing, GST records, gateway reconciliations, and customer payment logs.',
+    description: 'Handles financial invoicing, custom quotations, GST records, and customer records.',
     permissions: ALL_MODULES.map((m) => {
-      const isAllowed = ['Dashboard', 'Billing', 'Financials', 'Orders', 'Customers'].includes(m.id);
+      const isAllowed = ['Dashboard', 'Billing', 'Quotations', 'Orders', 'Customers'].includes(m.id);
       return {
         module: m.id,
         view: isAllowed,
-        add: ['Billing', 'Financials'].includes(m.id),
-        edit: ['Billing', 'Financials'].includes(m.id),
+        add: ['Billing', 'Quotations'].includes(m.id),
+        edit: ['Billing', 'Quotations'].includes(m.id),
         delete: false,
       };
     }),
@@ -516,10 +527,11 @@ export function hasPermission(
     if (target.includes('category') && m.includes('category')) return true;
     if (target.includes('order') && m.includes('order')) return true;
     if (target.includes('billing') && m.includes('billing')) return true;
-    if (target.includes('financial') && m.includes('financial')) return true;
+    if (target.includes('quotation') && m.includes('quotation')) return true;
     if (target.includes('customer') && m.includes('customer')) return true;
     if (target.includes('analytic') && m.includes('analytic')) return true;
     if ((target.includes('admin') || target.includes('role')) && (m.includes('admin') || m.includes('role'))) return true;
+    if (target.includes('coupon') && m.includes('coupon')) return true;
     return false;
   });
 

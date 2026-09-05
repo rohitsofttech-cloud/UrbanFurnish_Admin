@@ -6,8 +6,9 @@ import { openPrintWindow, createPrintDocumentShell } from '@/lib/printService';
 import { AdminProduct } from '@/lib/productData';
 import { Invoice } from '@/lib/billingStore';
 import { AdminOrder } from '@/lib/orderStore';
+import { Quotation, numberToWords, QUOTATION_COMPANY } from '@/lib/quotationStore';
 
-export type PrintableDocumentType = 'manufacturing' | 'invoice' | 'order-slip';
+export type PrintableDocumentType = 'manufacturing' | 'invoice' | 'order-slip' | 'quotation';
 
 export interface PrintableDocumentProps {
   type: PrintableDocumentType;
@@ -16,6 +17,7 @@ export interface PrintableDocumentProps {
   qrCodeUrl?: string;
   invoice?: Invoice | null;
   order?: AdminOrder | null;
+  quotation?: Quotation | null;
   productQrs?: Record<string, { qr: string; url: string }>;
   // Optional button styling customizations
   className?: string;
@@ -52,11 +54,11 @@ export function generateManufacturingSpecHtml(
     p.features && p.features.length > 0
       ? p.features
       : [
-          'High-grade structural alignment as per technical blueprint',
-          'Anti-termite and moisture-resistant kiln seasoned treatment',
-          'Reinforced internal joint brackets and load-bearing corners',
-          'Smooth sanded surface with uniform poly-coating finish',
-        ]
+        'High-grade structural alignment as per technical blueprint',
+        'Anti-termite and moisture-resistant kiln seasoned treatment',
+        'Reinforced internal joint brackets and load-bearing corners',
+        'Smooth sanded surface with uniform poly-coating finish',
+      ]
   )
     .map(
       (f) => `
@@ -90,7 +92,7 @@ export function generateManufacturingSpecHtml(
   const bodyContent = `
   <div class="sheet">
     <div class="header">
-      <div style="display: flex; align-items: flex-start; gap: 14px;">
+      <div style="display: flex; align-items: center ; gap: 14px;">
         <img src="/logo.png" alt="Urbn Furnish" style="height: 48px; width: auto; object-fit: contain;" />
         <div>
           <span class="badge">FACTORY WORKSHOP JOB CARD</span>
@@ -208,82 +210,95 @@ export function generateTaxInvoiceHtml(invoice: Invoice): string {
     .join('');
 
   const styles = `
-    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #111; background: #fff; padding: 28px 32px; display: flex; justify-content: center; align-items: flex-start; }
-    .wrap { max-width: 860px; width: 100%; margin: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 11px; color: #111; background: #fff; padding: 16px 12px; display: flex; justify-content: center; align-items: flex-start; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .wrap { max-width: 100%; width: 100%; margin: 0; }
 
-    /* ── Header ── */
-    .inv-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 16px; margin-bottom: 18px; }
-    .brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-    .brand-icon { width: 38px; height: 38px; object-fit: contain; }
-    .brand-name { font-size: 16px; font-weight: 900; letter-spacing: -0.2px; text-transform: uppercase; color: #e27429; }
-    .brand-meta { font-size: 11px; color: #444; line-height: 1.55; }
-    .inv-meta { text-align: right; }
-    .inv-meta .title { font-size: 22px; font-weight: 900; text-transform: uppercase; color: #e27429; letter-spacing: 1px; }
-    .inv-meta p { font-size: 11px; color: #333; margin-top: 4px; line-height: 1.65; }
-    .inv-meta strong { color: #000; }
+    /* ── Top badge ── */
+    .top-badge { font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.8px; color: #e27429; margin-bottom: 8px; text-align: right; }
+
+    /* ── Header company section ── */
+    .header-layout { display: flex; align-items: center; gap: 18px; margin-bottom: 12px; }
+    .logo-container { width: 150px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 10px; padding: 4px; overflow: hidden; }
+    .company-logo { width: 100%; height: auto; max-height: 85px; object-fit: contain; display: block; }
+    .company-details { flex: 1; }
+    .company-name { font-size: 20px; font-weight: 900; color: #e27429; letter-spacing: -0.3px; margin-bottom: 4px; line-height: 1.15; text-transform: uppercase; }
+    .company-info-line { font-size: 10.5px; color: #1f2937; line-height: 1.45; }
+    .company-info-line strong { color: #000000; font-weight: 700; }
+
+    /* ── Divider ── */
+    .primary-divider { height: 3px; background: #000000; margin-bottom: 0px; }
+
+    /* ── Meta bar ── */
+    .meta-bar { display: grid; grid-template-columns: 1.4fr 1.2fr 1.2fr 1.2fr; background: #e2e8f0; padding: 7px 12px; font-size: 11px; color: #000000; align-items: center; margin-bottom: 14px; }
+    .meta-item strong { font-weight: 700; }
 
     /* ── Address grid ── */
-    .addr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border: 1px solid #ccc; border-radius: 6px; padding: 13px 16px; background: #f9f9f9; margin-bottom: 18px; font-size: 11px; }
-    .addr-label { font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; color: #555; display: block; margin-bottom: 5px; }
-    .addr-name { font-weight: 700; font-size: 13px; color: #000; margin-bottom: 3px; }
-    .addr-detail { color: #444; line-height: 1.55; }
+    .addr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px 16px; background: #f8fafc; margin-bottom: 16px; font-size: 11px; }
+    .addr-label { font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; color: #000; display: block; margin-bottom: 4px; }
+    .addr-name { font-weight: 700; font-size: 12.5px; color: #000; margin-bottom: 2px; }
+    .addr-detail { color: #334155; line-height: 1.5; }
 
     /* ── Items table ── */
-    table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 11px; }
-    thead tr { background: #f0f0f0; border-top: 2px solid #000; border-bottom: 2px solid #000; }
-    th { padding: 8px 9px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 10px; color: #222; }
-    tbody tr { border-bottom: 1px solid #e0e0e0; page-break-inside: avoid; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11px; }
+    thead tr { background: #f1f5f9; border-top: 2px solid #000; border-bottom: 2px solid #000; }
+    th { padding: 8px 9px; text-align: left; font-weight: 800; text-transform: uppercase; font-size: 10px; color: #000; letter-spacing: 0.3px; }
+    tbody tr { border-bottom: 1px solid #e2e8f0; page-break-inside: avoid; }
     tbody tr:last-child { border-bottom: none; }
-    td { padding: 9px; vertical-align: top; }
+    td { padding: 8px 9px; vertical-align: middle; }
     .right { text-align: right; }
     .center { text-align: center; }
     .mono { font-family: 'Courier New', monospace; }
     .bold { font-weight: 700; }
 
     /* ── Footer: Notes + Totals ── */
-    .footer { display: flex; justify-content: space-between; gap: 24px; border-top: 1.5px solid #000; padding-top: 16px; margin-top: 4px; page-break-inside: avoid; }
-    .notes { max-width: 360px; }
-    .notes-label { font-weight: 700; text-transform: uppercase; font-size: 10px; color: #333; display: block; margin-bottom: 5px; }
-    .notes p { font-size: 10.5px; color: #555; line-height: 1.6; }
-    .notes em { font-style: italic; font-size: 10px; color: #777; display: block; margin-top: 5px; }
-    .totals { min-width: 250px; font-size: 11.5px; }
-    .t-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; color: #444; }
+    .footer { display: flex; justify-content: space-between; gap: 24px; border-top: 2px solid #000; padding-top: 14px; margin-top: 4px; page-break-inside: avoid; }
+    .notes { max-width: 380px; }
+    .notes-label { font-weight: 800; text-transform: uppercase; font-size: 10px; color: #000; display: block; margin-bottom: 4px; }
+    .notes p { font-size: 10.5px; color: #475569; line-height: 1.5; }
+    .notes em { font-style: italic; font-size: 9.5px; color: #64748b; display: block; margin-top: 6px; }
+    .totals { min-width: 270px; font-size: 11px; }
+    .t-row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #f1f5f9; color: #334155; }
     .t-row:last-of-type { border-bottom: none; }
-    .t-row .v { font-family: 'Courier New', monospace; font-weight: 600; color: #111; }
-    .t-grand { display: flex; justify-content: space-between; border-top: 2px solid #000; padding-top: 7px; margin-top: 6px; font-weight: 900; font-size: 13.5px; color: #000; }
-    .t-grand .v { font-family: 'Courier New', monospace; color: #e27429; }
+    .t-row .v { font-family: 'Courier New', monospace; font-weight: 600; color: #000; }
+    .t-grand { display: flex; justify-content: space-between; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 6px 0; margin-top: 6px; font-weight: 900; font-size: 12.5px; color: #000; }
+    .t-grand .v { font-family: 'Courier New', monospace; color: #e27429; font-weight: 900; }
 
     /* ── Signature bar ── */
-    .sig-bar { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed #aaa; margin-top: 34px; padding-top: 12px; font-size: 10.5px; color: #555; }
+    .sig-bar { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed #cbd5e1; margin-top: 28px; padding-top: 12px; font-size: 10.5px; color: #64748b; }
     .sig-right { text-align: right; }
-    .sig-line { border-top: 1px solid #555; margin-top: 22px; padding-top: 4px; font-size: 10px; color: #666; }
+    .sig-line { border-top: 1px solid #000; margin-top: 20px; padding-top: 4px; font-size: 10px; color: #334155; font-weight: 600; }
 
-    @media print { body { padding: 14px; } @page { margin: 10mm; size: A4; } }
+    @media print { body { padding: 0; } .wrap { max-width: 100%; } @page { margin: 6mm 6mm; size: A4 portrait; } }
   `;
 
   const bodyContent = `
   <div class="wrap">
-    <!-- Header -->
-    <div class="inv-header">
-      <div>
-        <div class="brand-row">
-          <img src="/logo.png" alt="Logo" class="brand-icon" />
-          <span class="brand-name">URBN FURNISH PVT LTD</span>
-        </div>
-        <div class="brand-meta">
-          Plot No. 42, Furniture Tech Park, Phase 2, Industrial Area,<br/>
-          Bangalore, Karnataka – 560066<br/>
-          <strong>GSTIN:</strong> ${inv.companyGst} &bull; <strong>PAN:</strong> ${inv.companyPan}<br/>
-          Email: billing@urbnfurnish.com &bull; Web: https://urbnfurnish.com
-        </div>
+    <!-- Top Badge -->
+    <div class="top-badge">TAX INVOICE</div>
+
+    <!-- Company Branding Header -->
+    <div class="header-layout">
+      <div class="logo-container">
+        <img src="/logo.png" alt="Company Logo" class="company-logo" onerror="this.style.display='none'" />
       </div>
-      <div class="inv-meta">
-        <div class="title">TAX INVOICE</div>
-        <p><strong>Invoice No:</strong> ${inv.invoiceNumber}</p>
-        <p>Invoice Date: ${inv.date}</p>
-        <p>Due Date: ${inv.dueDate}</p>
-        <p>Payment Mode: <strong>${inv.paymentMethod}</strong></p>
+      <div class="company-details">
+        <h1 class="company-name">URBN FURNISH PVT LTD</h1>
+        <div class="company-info-line">Office: Plot No. 42, Furniture Tech Park, Phase 2, Industrial Area, Bangalore, Karnataka – 560066</div>
+        <div class="company-info-line"><strong>GSTIN:</strong> ${inv.companyGst || '29AAAAU1234A1Z5'} &bull; <strong>PAN:</strong> ${inv.companyPan || 'AAAAU1234A'}</div>
+        <div class="company-info-line"><strong>Email:</strong> billing@urbnfurnish.com &bull; <strong>Website:</strong> https://urbnfurnish.com</div>
+        <div class="company-info-line"><strong>Dispatch From:</strong> Central Logistics Warehouse, Electronic City, Bangalore</div>
       </div>
+    </div>
+
+    <!-- Top Solid Black Divider -->
+    <div class="primary-divider"></div>
+
+    <!-- Meta Info Strip -->
+    <div class="meta-bar">
+      <div class="meta-item"><strong>Invoice No:</strong> ${inv.invoiceNumber}</div>
+      <div class="meta-item"><strong>Invoice Date:</strong> ${inv.date}</div>
+      <div class="meta-item"><strong>Due Date:</strong> ${inv.dueDate}</div>
+      <div class="meta-item"><strong>Payment Mode:</strong> ${inv.paymentMethod}</div>
     </div>
 
     <!-- Address -->
@@ -480,6 +495,536 @@ export function generateOrderSlipHtml(
 }
 
 /**
+ * Generates the HTML string for Quotation
+ */
+export function generateQuotationPrintHtml(q: Quotation): string {
+  // ─── Items Rows ────────────────────────────────────────────────────────────
+  const defaultFallbackImage = 'https://images.unsplash.com/photo-1580481077194-436f58637ae7?w=400&auto=format&fit=crop&q=80';
+
+  const itemRows = q.items
+    .map(
+      (item) => {
+        const imgSrc = item.imageUrl && item.imageUrl.trim() ? item.imageUrl : defaultFallbackImage;
+        return `
+    <tr class="item-row">
+      <td class="col-item">
+        <div class="item-cell-content">
+          <img src="${imgSrc}" class="item-img" alt="${item.name}" onerror="this.onerror=null; this.src='${defaultFallbackImage}';" />
+          <div class="item-text-wrap">
+            <div class="item-name">${item.name}</div>
+            ${item.hsnCode ? `<div class="item-sub">HSN: ${item.hsnCode}</div>` : ''}
+          </div>
+        </div>
+      </td>
+      <td class="col-qty">${item.qty} ${item.qtyUnit || 'PCS'}</td>
+      <td class="col-rate">${item.rate.toLocaleString('en-IN')}</td>
+      <td class="col-tax">
+        <div>${item.taxAmount.toLocaleString('en-IN')}</div>
+        <div class="tax-pct">(${item.gstPercent || 18}%)</div>
+      </td>
+      <td class="col-amount">${item.amount.toLocaleString('en-IN')}</td>
+    </tr>`;
+      }
+    )
+    .join('');
+
+  // ─── Extra Charges Rows ───────────────────────────────────────────────────
+  const extraChargesRows = (q.extraCharges || [])
+    .map(
+      (c) => `
+    <tr class="calc-row">
+      <td class="calc-label">${c.label}</td>
+      <td class="calc-val">₹ ${c.amount.toLocaleString('en-IN')}</td>
+    </tr>`
+    )
+    .join('');
+
+  const totalQty = q.items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+  const formattedQuotationDate = q.quotationDate
+    ? new Date(q.quotationDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : '';
+  const formattedExpiryDate = q.expiryDate
+    ? new Date(q.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : '';
+
+  const styles = `
+    @page {
+      size: A4 portrait;
+      margin: 6mm 6mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #ffffff;
+      color: #000000;
+      font-size: 11px;
+      line-height: 1.35;
+      padding: 16px 12px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .sheet {
+      width: 100%;
+      max-width: 100%;
+      margin: 0 auto;
+      background: #ffffff;
+    }
+    
+    /* Top title */
+    .top-badge {
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #e27429;
+      margin-bottom: 8px;
+    }
+
+    /* Header company section */
+    .header-layout {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .logo-container {
+      width: 150px;
+      height: 200pxs;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 6px;
+      box-shadow: 0 2px 6px rgba(226, 116, 41, 0.08);
+      overflow: hidden;
+    }
+    .company-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .company-details {
+      flex: 1;
+    }
+    .company-name {
+      font-size: 22px;
+      font-weight: 900;
+      color: #e27429;
+      letter-spacing: -0.3px;
+      margin-bottom: 4px;
+      line-height: 1.15;
+      text-transform: uppercase;
+    }
+    .company-info-line {
+      font-size: 10px;
+      color: #1f2937;
+      line-height: 1.45;
+    }
+    .company-info-line strong {
+      color: #000000;
+      font-weight: 700;
+    }
+
+    /* Top heavy divider */
+    .primary-divider {
+      height: 3px;
+      background: #000000;
+      margin-bottom: 0px;
+    }
+
+    /* Meta bar with Quotation No, Date, Expiry */
+    .meta-bar {
+      display: grid;
+      grid-template-columns: 1.2fr 1.4fr 1.4fr;
+      background: #e2e8f0;
+      padding: 7px 12px;
+      font-size: 11.5px;
+      color: #000000;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .meta-item strong {
+      font-weight: 700;
+    }
+
+    /* Client / Address Grid */
+    .address-section {
+      display: grid;
+      grid-template-columns: 1.3fr 1.3fr 1.4fr;
+      gap: 12px;
+      padding: 0 4px;
+      margin-bottom: 14px;
+      font-size: 11px;
+    }
+    .addr-heading {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #000000;
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+    }
+    .addr-name {
+      font-weight: 700;
+      color: #000000;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+    .addr-sub {
+      font-size: 10.5px;
+      color: #374151;
+      line-height: 1.35;
+    }
+    .driver-val {
+      font-weight: 700;
+      font-size: 11px;
+      color: #000000;
+    }
+
+    /* Items Table */
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0;
+    }
+    .items-table thead th {
+      border-top: 2px solid #000000;
+      border-bottom: 2px solid #000000;
+      padding: 7px 8px;
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #000000;
+    }
+    .items-table th.col-items { text-align: left; padding-left: 6px; }
+    .items-table th.col-qty { text-align: center; width: 85px; }
+    .items-table th.col-rate { text-align: right; width: 90px; }
+    .items-table th.col-tax { text-align: right; width: 90px; }
+    .items-table th.col-amount { text-align: right; width: 100px; padding-right: 6px; }
+
+    .items-table tbody tr.item-row td {
+      padding: 7px 8px;
+      vertical-align: middle;
+      font-size: 11px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .item-cell-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .item-img {
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      flex-shrink: 0;
+      display: block;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+    .item-img-placeholder {
+      width: 44px;
+      height: 44px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .item-text-wrap {
+      flex: 1;
+    }
+    .item-name {
+      font-weight: 800;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #000000;
+      line-height: 1.25;
+    }
+    .item-sub {
+      font-size: 9.5px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .col-qty {
+      text-align: center;
+      font-weight: 600;
+      color: #000000;
+      white-space: nowrap;
+    }
+    .col-rate {
+      text-align: right;
+      font-weight: 600;
+      color: #000000;
+    }
+    .col-tax {
+      text-align: right;
+      font-weight: 600;
+      color: #000000;
+    }
+    .tax-pct {
+      font-size: 9px;
+      color: #64748b;
+    }
+    .col-amount {
+      text-align: right;
+      font-weight: 700;
+      color: #000000;
+      padding-right: 6px;
+    }
+
+    /* Subtotal Bar */
+    .subtotal-table-row td {
+      border-top: 2px solid #000000;
+      border-bottom: 2px solid #000000;
+      padding: 6px 8px;
+      font-weight: 800;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      color: #000000;
+    }
+    .subtotal-label {
+      padding-left: 6px !important;
+    }
+    .subtotal-qty {
+      text-align: center;
+    }
+    .subtotal-tax {
+      text-align: right;
+    }
+    .subtotal-amt {
+      text-align: right;
+      padding-right: 6px !important;
+    }
+
+    /* Bottom Split: Terms & Conditions on Left, Totals on Right */
+    .bottom-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-top: 10px;
+      gap: 20px;
+    }
+    .terms-column {
+      flex: 1;
+      max-width: 420px;
+      padding-left: 4px;
+    }
+    .terms-heading {
+      font-weight: 800;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      color: #000000;
+      margin-bottom: 4px;
+    }
+    .terms-body {
+      font-size: 10px;
+      color: #111827;
+      line-height: 1.5;
+    }
+
+    .totals-column {
+      width: 290px;
+    }
+    .calc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    .calc-table td {
+      padding: 3px 0;
+    }
+    .calc-label {
+      text-align: right;
+      color: #111827;
+      padding-right: 18px;
+    }
+    .calc-val {
+      text-align: right;
+      font-weight: 600;
+      color: #000000;
+      width: 95px;
+      white-space: nowrap;
+    }
+    .grand-total-row td {
+      border-top: 1px solid #000000;
+      border-bottom: 1px solid #000000;
+      padding: 6px 0;
+      font-size: 12px;
+      font-weight: 800;
+      color: #000000;
+    }
+
+    /* Words in Bottom Right */
+    .words-section {
+      margin-top: 16px;
+      text-align: right;
+      padding-right: 4px;
+    }
+    .words-label {
+      font-weight: 800;
+      font-size: 11px;
+      color: #000000;
+      margin-bottom: 3px;
+    }
+    .words-text {
+      font-size: 10.5px;
+      color: #111827;
+    }
+
+    @media print {
+      body {
+        padding: 0;
+      }
+      .sheet {
+        max-width: 100%;
+      }
+    }
+  `;
+
+  const bodyContent = `
+  <div class="sheet">
+    <!-- Top Title -->
+    <div class="top-badge">QUOTATION</div>
+
+    <!-- Company Branding Header -->
+    <div class="header-layout">
+      <div class="logo-container">
+        <img src="/logo.png" alt="Company Logo" class="company-logo" onerror="this.style.display='none'" />
+      </div>
+      <div class="company-details">
+        <h1 class="company-name">${QUOTATION_COMPANY.name}</h1>
+        <div class="company-info-line">Office : ${QUOTATION_COMPANY.address}</div>
+        <div class="company-info-line"><strong>GSTIN:</strong> ${QUOTATION_COMPANY.gstin}</div>
+        <div class="company-info-line"><strong>Email:</strong> ${QUOTATION_COMPANY.email}</div>
+        <div class="company-info-line"><strong>Website:</strong> ${QUOTATION_COMPANY.website}</div>
+        <div class="company-info-line"><strong>Dispatch From:</strong> ${QUOTATION_COMPANY.dispatchFrom}</div>
+      </div>
+    </div>
+
+    <!-- Top Solid Black Divider -->
+    <div class="primary-divider"></div>
+
+    <!-- Meta Info Strip -->
+    <div class="meta-bar">
+      <div class="meta-item"><strong>Quotation No.:</strong> ${q.quotationNo}</div>
+      <div class="meta-item"><strong>Quotation Date:</strong> ${formattedQuotationDate}</div>
+      <div class="meta-item"><strong>Expiry Date:</strong> ${formattedExpiryDate}</div>
+    </div>
+
+    <!-- Bill To, Ship To, Driver Info -->
+    <div class="address-section">
+      <div>
+        <div class="addr-heading">BILL TO</div>
+        <div class="addr-name">${q.billTo.name || '—'}</div>
+        ${q.billTo.placeOfSupply ? `<div class="addr-sub">Place of Supply: ${q.billTo.placeOfSupply}</div>` : ''}
+        ${q.billTo.address && q.billTo.address !== q.billTo.placeOfSupply ? `<div class="addr-sub">${q.billTo.address}</div>` : ''}
+      </div>
+      <div>
+        <div class="addr-heading">SHIP TO</div>
+        <div class="addr-name">${q.shipTo.name || q.billTo.name || '—'}</div>
+        ${q.shipTo.address ? `<div class="addr-sub">${q.shipTo.address}</div>` : ''}
+      </div>
+      <div style="text-align: right;">
+        <div class="addr-heading" style="display: flex; justify-content: flex-end; gap: 8px;">
+          <span>Driver Number</span>
+          <span class="driver-val">${q.driverNumber || '—'}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Items Table -->
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th class="col-items">ITEMS</th>
+          <th class="col-qty">QTY.</th>
+          <th class="col-rate">RATE</th>
+          <th class="col-tax">TAX</th>
+          <th class="col-amount">AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemRows}
+        <!-- Subtotal Row -->
+        <tr class="subtotal-table-row">
+          <td class="subtotal-label">SUBTOTAL</td>
+          <td class="subtotal-qty">${totalQty}</td>
+          <td></td>
+          <td class="subtotal-tax">₹ ${q.totalTaxAmount.toLocaleString('en-IN')}</td>
+          <td class="subtotal-amt">₹ ${q.subtotal.toLocaleString('en-IN')}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Bottom Section: Terms on Left, Summary Calculations on Right -->
+    <div class="bottom-section">
+      <div class="terms-column">
+        <div class="terms-heading">TERMS AND CONDITIONS</div>
+        <div class="terms-body">
+          ${(q.termsAndConditions || '').replace(/\n/g, '<br/>')}
+        </div>
+      </div>
+
+      <div class="totals-column">
+        <table class="calc-table">
+          <tbody>
+            ${q.packagingCharges > 0
+      ? `<tr class="calc-row"><td class="calc-label">packing charges</td><td class="calc-val">₹ ${q.packagingCharges.toLocaleString('en-IN')}</td></tr>`
+      : ''
+    }
+            ${extraChargesRows}
+            <tr class="calc-row">
+              <td class="calc-label">Taxable Amount</td>
+              <td class="calc-val">₹ ${q.taxableAmount.toLocaleString('en-IN')}</td>
+            </tr>
+            <tr class="calc-row">
+              <td class="calc-label">CGST @9%</td>
+              <td class="calc-val">₹ ${q.cgst.toLocaleString('en-IN')}</td>
+            </tr>
+            <tr class="calc-row">
+              <td class="calc-label">SGST @9%</td>
+              <td class="calc-val">₹ ${q.sgst.toLocaleString('en-IN')}</td>
+            </tr>
+            <tr class="grand-total-row">
+              <td class="calc-label" style="font-weight:800; color:#000;">Total Amount</td>
+              <td class="calc-val" style="font-weight:800; color:#000;">₹ ${q.grandTotal.toLocaleString('en-IN')}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Total Amount in Words -->
+    <div class="words-section">
+      <div class="words-label">Total Amount (in words)</div>
+      <div class="words-text">${numberToWords(q.grandTotal)}</div>
+    </div>
+  </div>`;
+
+  return createPrintDocumentShell({
+    title: `Quotation #${q.quotationNo} — ${q.billTo.name}`,
+    styles,
+    bodyContent,
+  });
+}
+
+/**
  * Unified Print Document Trigger Button / Component
  */
 export default function PrintableDocumentButton({
@@ -488,6 +1033,7 @@ export default function PrintableDocumentButton({
   qrCodeUrl,
   invoice,
   order,
+  quotation,
   productQrs,
   className = '',
   buttonText,
@@ -515,6 +1061,10 @@ export default function PrintableDocumentButton({
       if (!order) return;
       title = `Order Slip – ${order.orderNumber || order.id}`;
       htmlContent = generateOrderSlipHtml(order, qrCodeUrl, productQrs);
+    } else if (type === 'quotation') {
+      if (!quotation) return;
+      title = `Quotation #${quotation.quotationNo}`;
+      htmlContent = generateQuotationPrintHtml(quotation);
     }
 
     if (htmlContent) {
@@ -541,6 +1091,7 @@ export default function PrintableDocumentButton({
     manufacturing: 'Print Workshop Job Card',
     invoice: 'Print Invoice (PDF)',
     'order-slip': 'Print Order Slip',
+    quotation: 'Print Quotation',
   };
 
   return (

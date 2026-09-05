@@ -18,6 +18,8 @@ import {
   CreditCard,
   ShieldCheck,
   Factory,
+  Ticket,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { hasPermission } from '@/lib/auth';
@@ -83,15 +85,11 @@ const MENU_DATA: SidebarCategory[] = [
     category: 'Billing & Invoices',
     permissionKey: 'Billing',
     icon: <Receipt size={19} />,
-    path: '/billing',
-    badge: 'GST',
+    children: [
+      { name: 'Tax Invoices', path: '/billing', icon: <Receipt size={15} />, permissionKey: 'Billing' },
+      { name: 'Custom Quotation', path: '/quotation', badge: 'NEW', icon: <FileText size={15} />, permissionKey: 'Quotations' },
+    ],
   },
-  // {
-  //   category: 'Financials & Payments',
-  //   permissionKey: 'Financials',
-  //   icon: <CreditCard size={19} />,
-  //   path: '/financials',
-  // },
   {
     category: 'Customer Directory',
     permissionKey: 'Customers',
@@ -191,8 +189,12 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       >
         <div className="h-16 flex items-center justify-between px-5 border-b border-borderColor bg-sidebarBg">
           <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-primary to-emerald-600 flex items-center justify-center text-white font-black text-xl shadow-md shadow-primary/25 group-hover:scale-105 transition-transform">
-              U
+            <div className="w-13 h-13 rounded-xl bg-white/5 border border-borderColor flex items-center justify-center p-1 shadow-sm shadow-primary/10 group-hover:scale-105 transition-transform overflow-hidden">
+              <img
+                src="/icons/favicon.png"
+                alt="URBN FURNISH"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div className="flex flex-col">
               <span className="font-extrabold text-base tracking-tight text-textColor leading-tight">

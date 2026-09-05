@@ -259,6 +259,15 @@ export default function OrdersPage() {
             </div>
           </div>
 
+          <div className="p-4 rounded-2xl bg-surfaceColor border border-borderColor shadow-xs flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs text-textMuted font-medium">Delivered Orders</p>
+              <p className="text-xl sm:text-2xl font-black text-emerald-500 font-mono">{metrics.deliveredCount}</p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <CheckCircle2 size={20} />
+            </div>
+          </div>
         </div>
 
         {/* Tab Filters */}

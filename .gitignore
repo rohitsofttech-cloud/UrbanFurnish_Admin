@@ -14,7 +14,8 @@ CLAUDE.md
 AGENT_HISTORY.md
 OPENROUTER.md
 scripts
-/financials
+/app/financials
+
 # testing
 /coverage
 

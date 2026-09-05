@@ -26,8 +26,12 @@ export default function DirectManufacturingSpecPage() {
               <span className="hidden sm:inline">All Specs</span>
             </Link>
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
-                <Factory size={16} />
+              <div className="w-8 h-8 rounded-lg bg-surfaceColor border border-borderColor flex items-center justify-center p-1 overflow-hidden shrink-0">
+                <img
+                  src="/logo.png"
+                  alt="URBN FURNISH"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
                 <span className="text-xs font-black tracking-tight text-textColor block">

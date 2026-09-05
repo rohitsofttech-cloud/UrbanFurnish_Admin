@@ -34,7 +34,7 @@ import {
   Factory,
   ShoppingCart,
   Receipt,
-  CreditCard,
+  FileText,
   BarChart3,
   ChevronDown,
   ChevronRight,
@@ -716,14 +716,17 @@ function AdministrativeRolesContent() {
                                   <span className="text-textMuted text-xs italic">No permissions assigned</span>
                                 ) : (
                                   <>
-                                    {visiblePermissions.slice(0, 4).map((p) => (
-                                      <span
-                                        key={p.module}
-                                        className="px-2 py-0.5 rounded-md bg-bgColor border border-borderColor text-[10px] font-bold text-textColor uppercase tracking-wider"
-                                      >
-                                        {p.module}
-                                      </span>
-                                    ))}
+                                    {visiblePermissions.slice(0, 4).map((p) => {
+                                      const modDef = ALL_MODULES.find((m) => m.id === p.module);
+                                      return (
+                                        <span
+                                          key={p.module}
+                                          className="px-2 py-0.5 rounded-md bg-bgColor border border-borderColor text-[10px] font-bold text-textColor uppercase tracking-wider"
+                                        >
+                                          {modDef?.name || p.module}
+                                        </span>
+                                      );
+                                    })}
                                     {visiblePermissions.length > 4 && (
                                       <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-extrabold uppercase">
                                         +{visiblePermissions.length - 4} more
@@ -879,7 +882,7 @@ function AdministrativeRolesContent() {
                           Factory: <Factory size={17} />,
                           ShoppingCart: <ShoppingCart size={17} />,
                           Receipt: <Receipt size={17} />,
-                          CreditCard: <CreditCard size={17} />,
+                          FileText: <FileText size={17} />,
                           Users: <Users size={17} />,
                           BarChart3: <BarChart3 size={17} />,
                         };
